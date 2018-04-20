@@ -72,13 +72,13 @@ uniform float3 fUITintWarm <
 	ui_type = "color";
 	ui_category = UI_CATEGORY_COLOR;
     ui_label = "Warm Tint";
-> = float3(0.90, 0.80, 0.40);
+> = float3(0.04, 0.04, 0.02);
 
 uniform float3 fUITintCold <
 	ui_type = "color";
 	ui_category = UI_CATEGORY_COLOR;
     ui_label = "Cold Tint";
-> = float3(0.25, 0.30, 0.40);
+> = float3(0.02, 0.04, 0.04);
 
 uniform int iUIDebug <
 	ui_type = "combo";
