@@ -1,6 +1,5 @@
 #include "ReShade.fxh"
-#include "Include/Functions.fxh"
-#include "Include/Color.fxh"
+#include "Tools.fxh"
 
 #define GOLDEN_RATIO 1.6180339887
 #define INV_GOLDEN_RATIO  1.0 / 1.6180339887
@@ -62,11 +61,11 @@ uniform float UISpiralScale <
 float3 DrawCenterLines(float3 background, float3 gridColor, float lineWidth, float2 texcoord) {
     float3 result;    
 
-    sctpoint lineV1 = Functions::NewPoint(gridColor, lineWidth, float2(0.5, texcoord.y));
-    sctpoint lineH1 = Functions::NewPoint(gridColor, lineWidth, float2(texcoord.x, 0.5));
+    sctpoint lineV1 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(0.5, texcoord.y));
+    sctpoint lineH1 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(texcoord.x, 0.5));
     
-    result = Functions::DrawPoint(background, lineV1, texcoord);
-    result = Functions::DrawPoint(result, lineH1, texcoord);
+    result = Tools::Draw::Point(background, lineV1, texcoord);
+    result = Tools::Draw::Point(result, lineH1, texcoord);
 
     return result;
 }
@@ -74,16 +73,16 @@ float3 DrawCenterLines(float3 background, float3 gridColor, float lineWidth, flo
 float3 DrawThirds(float3 background, float3 gridColor, float lineWidth, float2 texcoord) {
     float3 result;    
 
-    sctpoint lineV1 = Functions::NewPoint(gridColor, lineWidth, float2(1.0 / 3.0, texcoord.y));
-    sctpoint lineV2 = Functions::NewPoint(gridColor, lineWidth, float2(2.0 / 3.0, texcoord.y));
+    sctpoint lineV1 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(1.0 / 3.0, texcoord.y));
+    sctpoint lineV2 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(2.0 / 3.0, texcoord.y));
 
-    sctpoint lineH1 = Functions::NewPoint(gridColor, lineWidth, float2(texcoord.x, 1.0 / 3.0));
-    sctpoint lineH2 = Functions::NewPoint(gridColor, lineWidth, float2(texcoord.x, 2.0 / 3.0));
+    sctpoint lineH1 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(texcoord.x, 1.0 / 3.0));
+    sctpoint lineH2 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(texcoord.x, 2.0 / 3.0));
     
-    result = Functions::DrawPoint(background, lineV1, texcoord);
-    result = Functions::DrawPoint(result, lineV2, texcoord);
-    result = Functions::DrawPoint(result, lineH1, texcoord);
-    result = Functions::DrawPoint(result, lineH2, texcoord);
+    result = Tools::Draw::Point(background, lineV1, texcoord);
+    result = Tools::Draw::Point(result, lineV2, texcoord);
+    result = Tools::Draw::Point(result, lineH1, texcoord);
+    result = Tools::Draw::Point(result, lineH2, texcoord);
 
     return result;
 }
@@ -91,24 +90,24 @@ float3 DrawThirds(float3 background, float3 gridColor, float lineWidth, float2 t
 float3 DrawFifths(float3 background, float3 gridColor, float lineWidth, float2 texcoord) {
     float3 result;    
 
-    sctpoint lineV1 = Functions::NewPoint(gridColor, lineWidth, float2(1.0 / 5.0, texcoord.y));
-    sctpoint lineV2 = Functions::NewPoint(gridColor, lineWidth, float2(2.0 / 5.0, texcoord.y));
-    sctpoint lineV3 = Functions::NewPoint(gridColor, lineWidth, float2(3.0 / 5.0, texcoord.y));
-    sctpoint lineV4 = Functions::NewPoint(gridColor, lineWidth, float2(4.0 / 5.0, texcoord.y));
+    sctpoint lineV1 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(1.0 / 5.0, texcoord.y));
+    sctpoint lineV2 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(2.0 / 5.0, texcoord.y));
+    sctpoint lineV3 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(3.0 / 5.0, texcoord.y));
+    sctpoint lineV4 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(4.0 / 5.0, texcoord.y));
 
-    sctpoint lineH1 = Functions::NewPoint(gridColor, lineWidth, float2(texcoord.x, 1.0 / 5.0));
-    sctpoint lineH2 = Functions::NewPoint(gridColor, lineWidth, float2(texcoord.x, 2.0 / 5.0));
-    sctpoint lineH3 = Functions::NewPoint(gridColor, lineWidth, float2(texcoord.x, 3.0 / 5.0));
-    sctpoint lineH4 = Functions::NewPoint(gridColor, lineWidth, float2(texcoord.x, 4.0 / 5.0));
+    sctpoint lineH1 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(texcoord.x, 1.0 / 5.0));
+    sctpoint lineH2 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(texcoord.x, 2.0 / 5.0));
+    sctpoint lineH3 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(texcoord.x, 3.0 / 5.0));
+    sctpoint lineH4 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(texcoord.x, 4.0 / 5.0));
     
-    result = Functions::DrawPoint(background, lineV1, texcoord);
-    result = Functions::DrawPoint(result, lineV2, texcoord);
-    result = Functions::DrawPoint(result, lineV3, texcoord);
-    result = Functions::DrawPoint(result, lineV4, texcoord);
-    result = Functions::DrawPoint(result, lineH1, texcoord);
-    result = Functions::DrawPoint(result, lineH2, texcoord);
-    result = Functions::DrawPoint(result, lineH3, texcoord);
-    result = Functions::DrawPoint(result, lineH4, texcoord);
+    result = Tools::Draw::Point(background, lineV1, texcoord);
+    result = Tools::Draw::Point(result, lineV2, texcoord);
+    result = Tools::Draw::Point(result, lineV3, texcoord);
+    result = Tools::Draw::Point(result, lineV4, texcoord);
+    result = Tools::Draw::Point(result, lineH1, texcoord);
+    result = Tools::Draw::Point(result, lineH2, texcoord);
+    result = Tools::Draw::Point(result, lineH3, texcoord);
+    result = Tools::Draw::Point(result, lineH4, texcoord);
 
     return result;
 }
@@ -116,16 +115,16 @@ float3 DrawFifths(float3 background, float3 gridColor, float lineWidth, float2 t
 float3 DrawGoldenRatio(float3 background, float3 gridColor, float lineWidth, float2 texcoord) {
     float3 result;    
 
-    sctpoint lineV1 = Functions::NewPoint(gridColor, lineWidth, float2(1.0 / GOLDEN_RATIO, texcoord.y));
-    sctpoint lineV2 = Functions::NewPoint(gridColor, lineWidth, float2(1.0 - 1.0 / GOLDEN_RATIO, texcoord.y));
+    sctpoint lineV1 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(1.0 / GOLDEN_RATIO, texcoord.y));
+    sctpoint lineV2 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(1.0 - 1.0 / GOLDEN_RATIO, texcoord.y));
 
-    sctpoint lineH1 = Functions::NewPoint(gridColor, lineWidth, float2(texcoord.x, 1.0 / GOLDEN_RATIO));
-    sctpoint lineH2 = Functions::NewPoint(gridColor, lineWidth, float2(texcoord.x, 1.0 - 1.0 / GOLDEN_RATIO));
+    sctpoint lineH1 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(texcoord.x, 1.0 / GOLDEN_RATIO));
+    sctpoint lineH2 = Tools::Draw::NewPoint(gridColor, lineWidth, float2(texcoord.x, 1.0 - 1.0 / GOLDEN_RATIO));
     
-    result = Functions::DrawPoint(background, lineV1, texcoord);
-    result = Functions::DrawPoint(result, lineV2, texcoord);
-    result = Functions::DrawPoint(result, lineH1, texcoord);
-    result = Functions::DrawPoint(result, lineH2, texcoord);
+    result = Tools::Draw::Point(background, lineV1, texcoord);
+    result = Tools::Draw::Point(result, lineV2, texcoord);
+    result = Tools::Draw::Point(result, lineH1, texcoord);
+    result = Tools::Draw::Point(result, lineH2, texcoord);
 
     return result;
 }
@@ -134,15 +133,15 @@ float3 DrawDiagonals(float3 background, float3 gridColor, float lineWidth, float
     float3 result;    
     float slope = (float)BUFFER_WIDTH / (float)BUFFER_HEIGHT;
 
-    sctpoint line1 = Functions::NewPoint(gridColor, lineWidth,    float2(texcoord.x, texcoord.x * slope));
-    sctpoint line2 = Functions::NewPoint(gridColor, lineWidth,  float2(texcoord.x, 1.0 - texcoord.x * slope));
-    sctpoint line3 = Functions::NewPoint(gridColor, lineWidth,   float2(texcoord.x, (1.0 - texcoord.x) * slope));
-    sctpoint line4 = Functions::NewPoint(gridColor, lineWidth,  float2(texcoord.x, texcoord.x * slope + 1.0 - slope));
+    sctpoint line1 = Tools::Draw::NewPoint(gridColor, lineWidth,    float2(texcoord.x, texcoord.x * slope));
+    sctpoint line2 = Tools::Draw::NewPoint(gridColor, lineWidth,  float2(texcoord.x, 1.0 - texcoord.x * slope));
+    sctpoint line3 = Tools::Draw::NewPoint(gridColor, lineWidth,   float2(texcoord.x, (1.0 - texcoord.x) * slope));
+    sctpoint line4 = Tools::Draw::NewPoint(gridColor, lineWidth,  float2(texcoord.x, texcoord.x * slope + 1.0 - slope));
     
-    result = Functions::DrawPoint(background, line1, texcoord);
-    result = Functions::DrawPoint(result, line2, texcoord);
-    result = Functions::DrawPoint(result, line3, texcoord);
-    result = Functions::DrawPoint(result, line4, texcoord);
+    result = Tools::Draw::Point(background, line1, texcoord);
+    result = Tools::Draw::Point(result, line2, texcoord);
+    result = Tools::Draw::Point(result, line3, texcoord);
+    result = Tools::Draw::Point(result, line4, texcoord);
 
     return result;
 }
@@ -180,9 +179,9 @@ float3 DrawCircle(float3 background, float3 gridColor, float2 pos, float radius,
     if(vecAngle < (360.0-circleLen))
         coord = -1.0.xx;
 
-    sctpoint lineV1 = Functions::NewPoint(gridColor, lineWidth, coord);
+    sctpoint lineV1 = Tools::Draw::NewPoint(gridColor, lineWidth, coord);
     
-    result = Functions::DrawPoint(background, lineV1, texcoord);
+    result = Tools::Draw::Point(background, lineV1, texcoord);
 
     return result;
 }
