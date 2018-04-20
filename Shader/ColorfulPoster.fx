@@ -28,7 +28,7 @@ uniform int iUIStepType <
 	ui_category = UI_CATEGORY_POSTERIZATION;
 	ui_label = "Curve Type";
 	ui_items = "Linear\0Smoothstep\0Logistic\0";
-> = 1;
+> = 2;
 
 uniform float fUIStepContinuity <
 	ui_type = "drag";
