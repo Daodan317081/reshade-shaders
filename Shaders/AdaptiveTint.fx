@@ -158,8 +158,8 @@ float3 AdaptiveTint_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : 
 		Get BackBuffer and both LUTs
 	*******************************************************/
 	float3 backbuffer = tex2D(ReShade::BackBuffer, texcoord).rgb;
-	float3 lutWarm = Tools::Color::LayerMerge(fUITintWarm, backbuffer, LAYER_MODE_DARKENONLY);
-	float3 lutCold = Tools::Color::LayerMerge(fUITintCold, backbuffer, LAYER_MODE_DARKENONLY);
+	float3 lutWarm = fUITintWarm * backbuffer;
+	float3 lutCold = fUITintCold * backbuffer;
 
 	/*******************************************************
 		Interpolate between both LUTs
