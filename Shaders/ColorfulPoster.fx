@@ -4,6 +4,7 @@
 *******************************************************/
 
 #include "ReShade.fxh"
+#include "Stats.fxh"
 #include "Tools.fxh"
 
 #define UI_CATEGORY_POSTERIZATION "Posterization"
@@ -63,6 +64,27 @@ uniform int iUIUseDepthBuffer <
 	ui_tooltip = "Outlines might obstruct Game UI";
 	ui_items = "No\0Yes\0Show Depth Buffer\0";
 > = 1;
+
+uniform int iUINormalizeChroma <
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_PENCILLAYER;
+	ui_label = "Normalize Chroma";
+	ui_min = 0; ui_max = 1;
+> = 1;
+
+uniform int iUIOverrideLumaWeight <
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_PENCILLAYER;
+	ui_label = "Weight Luma With Average Luma";
+	ui_min = 0; ui_max = 1;
+> = 1;
+
+uniform int iUIOverrideSaturationWeight <
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_PENCILLAYER;
+	ui_label = "Weight Saturation With Average Saturation/Current Saturation";
+	ui_min = 0; ui_max = 2;
+> = 2;
 
 uniform float fUISaturationWeight <
 	ui_type = "drag";
@@ -143,6 +165,8 @@ sampler2D SamplerColorfulPosterChroma { Texture = texColorfulPosterChroma; };
 void Chroma_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord,out float3 chroma : SV_Target0) {
     float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
 	chroma = color - dot(color, LumaCoeff);
+	if(iUINormalizeChroma)
+		chroma = normalize(chroma);
 }
 
 float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
@@ -183,14 +207,28 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	*******************************************************/
     float3 pencilLayer;
 	float3 chromaEdges = dot(Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, CONV_SOBEL, CONV_MAX), 0.5.xxx);
+	float saturation = Tools::Color::GetSaturation(backbuffer);
+
+	float satWeight = fUISaturationWeight;
+	float lumWeight = fUILumaWeight;
+
+	if(iUIOverrideLumaWeight == 1) {
+		lumWeight = tex2Dfetch(shared_SamplerStatsAvgLuma, int4(0, 0, 0, 0)).r;
+	}
+	if(iUIOverrideSaturationWeight == 1) {
+		satWeight = Tools::Color::GetSaturation(tex2Dfetch(shared_SamplerStatsAvgColor, int4(0, 0, 0, 0)).rgb);
+	}
+	else if(iUIOverrideSaturationWeight == 2) {
+		satWeight = saturation;
+	}
 	
 	//Basically the same thing as changing the levels (as in Levels.fx) i guess... 
 	chromaEdges = clamp(chromaEdges, fUIPencilLayerClipDetails, 1.0);
 	chromaEdges = Tools::Functions::Map(chromaEdges.r, float2(fUIPencilLayerClipDetails, 1.0), FLOAT_RANGE).rrr;
 
 	//Reduce the strength of the pencil layer in (higly) saturated/bright areas (like faces for example)
-	float saturationWeight = 1.0 - saturate(pow(Tools::Color::GetSaturation(backbuffer), (fUISaturationWeight) * 4.0));
-	float lumaWeight = 1.0 - saturate(pow(luma, (fUILumaWeight) * 4.0));
+	float saturationWeight = 1.0 - saturate(pow(saturation, (satWeight) * 4.0));
+	float lumaWeight = 1.0 - saturate(pow(luma, (lumWeight) * 4.0));
 	float finalWeight = min(saturationWeight, lumaWeight);
 	
 	chromaEdges *= finalWeight;

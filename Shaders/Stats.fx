@@ -89,10 +89,11 @@ void Create_Stats_Image_PS(float4 position : SV_Position, float2 texcoord : TEXC
     float3 warm = Tools::Color::YIQtoRGB(float3(0.5, YIQ_I_RANGE.y, 0.0));
 	float3 cold = Tools::Color::YIQtoRGB(float3(0.5, YIQ_I_RANGE.x, 0.0));
     float avgColorTemp = Tools::Functions::Map(tex2D(shared_SamplerStatsAvgColorTemp, 0.5.xx).r, YIQ_I_RANGE, FLOAT_RANGE);
+    float3 avgColor = tex2Dfetch(shared_SamplerStatsAvgColor, int4(0, 0, 0, 0)).rgb;
     float3 tmpScale = lerp(cold, warm, texcoord.x);
 
 	sctpoint scaleLuma = Tools::Draw::NewPoint(texcoord.x, offset, float2(texcoord.x, texcoord.y < 0.5 ? texcoord.y : -1));
-    sctpoint markerAvgLuma = Tools::Draw::NewPoint(MAGENTA, offset, float2(avgLuma, texcoord.y < 0.5 ? texcoord.y : -1));
+    sctpoint markerAvgLuma = Tools::Draw::NewPoint(avgColor, offset, float2(avgLuma, texcoord.y < 0.5 ? texcoord.y : -1));
 
     sctpoint scaleColorTemp = Tools::Draw::NewPoint(tmpScale, offset, float2(texcoord.x, texcoord.y > 0.5 ? texcoord.y : -1));
     sctpoint markerAvgColorTemp = Tools::Draw::NewPoint(BLACK, offset, float2(avgColorTemp, texcoord.y > 0.5 ? texcoord.y : -1));

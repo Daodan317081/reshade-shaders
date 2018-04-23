@@ -49,12 +49,13 @@ uniform int iUILayerMode <
 uniform int iUIEdgeType <
 	ui_type = "combo";
 	ui_label = "Edge detection kernel";
-	ui_items = "CONV_SOBEL\0CONV_PREWITT\0CONV_SCHARR\0";
+	ui_items = "CONV_SOBEL\0CONV_PREWITT\0CONV_SCHARR\0CONV_SOBEL2\0";
 > = 0;
 */
 #define CONV_SOBEL 0
 #define CONV_PREWITT 1
 #define CONV_SCHARR 2
+#define CONV_SOBEL2 3
 
 /*
 uniform int iUIEdgeMergeMethod <
@@ -288,6 +289,26 @@ namespace Tools {
             return acc / divisor;
         }
 
+        float3 NineByNine(sampler s, float2 texcoord, float kernel[81], float divisor) {
+            float x, y, px, py;
+            float3 acc = 0.0;
+
+            px = ReShade::PixelSize.x;
+            py = ReShade::PixelSize.y;
+            x = texcoord.x - 4 * px;
+            y = texcoord.y - 4 * py;
+
+            [loop]
+            for(int m = 0; m < 9; m++) {
+                [loop]
+                for(int n = 0; n < 9; n++) {
+                    acc += kernel[n + (m*9)] * tex2D(s, float2(x + n * px, y + m * py)).rgb;
+                }
+            }
+
+            return acc / divisor;
+        }
+
         float3 Prewitt(sampler s, float2 texcoord, int type) {
             static const float Prewitt_X[9] = { -1.0,  0.0, 1.0,
                                                 -1.0,  0.0, 1.0,
@@ -318,6 +339,21 @@ namespace Tools {
             return ConvReturn(retValX, retValY, type);
         }
 
+        float3 SobelINV(sampler s, float2 texcoord, int type) {
+            static const float Sobel_X[9] = { 	-1.0,  0.0, 1.0,
+                                                -2.0,  0.0, 2.0,
+                                                -1.0,  0.0, 1.0	 };
+
+            static const float Sobel_Y[9] = { -1.0, -2.0,  -1.0,
+                                               0.0, 0.0,  0.0,
+                                               1.0, 2.0, 1.0	 };
+            
+            float3 retValX = Convolution::ThreeByThree(s, texcoord, Sobel_X, 1.0);
+            float3 retValY = Convolution::ThreeByThree(s, texcoord, Sobel_Y, 1.0);
+
+            return ConvReturn(retValX, retValY, type);
+        }
+
         float3 Scharr(sampler s, float2 texcoord, int type) {
             static const float Scharr_X[9] = { 	 3.0,  0.0,  -3.0,
                                                 10.0,  0.0, -10.0,
@@ -340,6 +376,11 @@ namespace Tools {
                 return Convolution::Prewitt(s, texcoord, ret);
             else if(type == CONV_SCHARR)
                 return Convolution::Scharr(s, texcoord, ret);
+            else if(type == CONV_SOBEL2) {
+                float3 sobel1 = Convolution::Sobel(s, texcoord, ret);
+                float3 sobel2 = Convolution::SobelINV(s, texcoord, ret);
+                return ConvReturn(sobel1, sobel2, ret);
+            }
             else
                 return float3(1.0, 0.0, 1.0);
         }
@@ -383,6 +424,22 @@ namespace Tools {
 
             return Convolution::FiveByFive(s, texcoord, kernel, 1.0);
         }
+
+        float3 BlurGauss9x9(sampler s, float2 texcoord) {
+            static const float kernel[81] = {   0,	        0.000001,	0.000014,	0.000055,	0.000088,	0.000055,	0.000014,	0.000001,	0,
+                                                0.000001,	0.000036,	0.000362,	0.001445,	0.002289,	0.001445,	0.000362,	0.000036,	0.000001,
+                                                0.000014,	0.000362,	0.003672,	0.014648,	0.023205,	0.014648,	0.003672,	0.000362,	0.000014,
+                                                0.000055,	0.001445,	0.014648,	0.058434,	0.092566,	0.058434,	0.014648,	0.001445,	0.000055,
+                                                0.000088,	0.002289,	0.023205,	0.092566,	0.146634,	0.092566,	0.023205,	0.002289,	0.000088,
+                                                0.000055,	0.001445,	0.014648,	0.058434,	0.092566,	0.058434,	0.014648,	0.001445,	0.000055,
+                                                0.000014,	0.000362,	0.003672,	0.014648,	0.023205,	0.014648,	0.003672,	0.000362,	0.000014,
+                                                0.000001,	0.000036,	0.000362,	0.001445,	0.002289,	0.001445,	0.000362,	0.000036,	0.000001,
+                                                0,	        0.000001,	0.000014,	0.000055,	0.000088,	0.000055,	0.000014,	0.000001,	0 };
+            
+
+            return Convolution::NineByNine(s, texcoord, kernel, 1.0);
+        }
+
     }
 
     namespace Draw {
