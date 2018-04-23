@@ -209,7 +209,6 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		return ReShade::GetLinearizedDepth(texcoord).rrr;
 
 	//Finalize pencil layer
-	//In order to see how 'finalWeight' affects both layers (egdes and outlines) it gets applied separately and not here
 	pencilLayer = saturate(max(chromaEdges, outlines) * fUIStrengthPencilLayer);
 
 	/*******************************************************
