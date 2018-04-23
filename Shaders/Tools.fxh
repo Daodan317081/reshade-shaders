@@ -28,7 +28,6 @@ uniform int iUILayerMode <
 	ui_items = "LAYER_MODE_NORMAL\0LAYER_MODE_MULTIPLY\0LAYER_MODE_DIVIDE\0LAYER_MODE_SCREEN\0LAYER_MODE_OVERLAY\0LAYER_MODE_DODGE\0LAYER_MODE_BURN\0LAYER_MODE_HARDLIGHT\0LAYER_MODE_SOFTLIGHT\0LAYER_MODE_GRAINEXTRACT\0LAYER_MODE_GRAINMERGE\0LAYER_MODE_DIFFERENCE\0LAYER_MODE_ADDITION\0LAYER_MODE_SUBTRACT\0LAYER_MODE_DARKENONLY\0LAYER_MODE_LIGHTENONLY\0";
 > = 0;
 */
-
 #define LAYER_MODE_NORMAL			0
 #define LAYER_MODE_MULTIPLY		    1
 #define LAYER_MODE_DIVIDE			2
@@ -198,20 +197,9 @@ namespace Tools {
         }
 
         float GetSaturation(float3 color) {
-            float maxVal, minVal, delta;
-            maxVal = max(color.r, max(color.g, color.b));
-            minVal = min(color.r, min(color.g, color.b));
-
-            delta = maxVal - minVal;
-            if(delta < 1.0e-10) {
-                return 0.0;
-            }
-
-            if(maxVal > 0.0) {
-                return delta / maxVal;
-            }
-            
-            return 0.0;
+            float maxVal = max(color.r, max(color.g, color.b));
+            float minVal = min(color.r, min(color.g, color.b));         
+            return maxVal - minVal;
         }
 
         //https://docs.gimp.org/en/gimp-concepts-layer-modes.html
