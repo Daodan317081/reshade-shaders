@@ -236,12 +236,21 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	//Create outlines based on depth buffer
 	float3 outlines = BLACK;
 	if(iUIUseDepthBuffer == 1) {
-		float depth0 = ReShade::GetLinearizedDepth(texcoord);
-		float depth1 = ReShade::GetLinearizedDepth(texcoord + ReShade::PixelSize);
-		float depth2 = ReShade::GetLinearizedDepth(texcoord - ReShade::PixelSize);
-		float diff1 = abs(depth0 - depth1);
-		float diff2 = abs(depth0 - depth2);
-		outlines = (diff1 + diff2) < 0.01 ? 0.0.rrr : fUIOutlineStrength.rrr * finalWeight;
+		float depthC = ReShade::GetLinearizedDepth(texcoord);
+		float depthN = ReShade::GetLinearizedDepth(texcoord + float2(0.0, -ReShade::PixelSize.y));
+		float depthNE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, -ReShade::PixelSize.y));
+		float depthE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, 0.0));
+		float depthSE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, ReShade::PixelSize.y));
+		float depthS = ReShade::GetLinearizedDepth(texcoord + float2(0.0, ReShade::PixelSize.y));
+		float depthSW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, ReShade::PixelSize.y));
+		float depthW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, 0.0));
+		float depthNW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, -ReShade::PixelSize.y));
+
+		float diffNS = abs(depthN - depthS);
+		float diffWE = abs(depthW - depthE);
+		float diffNWSE = abs(depthNW - depthSE);
+		float diffSWNE = abs(depthSW - depthNE);
+		outlines = (diffNS + diffWE + diffNWSE + diffSWNE) * (1.0 - depthC) * (fUIOutlineStrength.rrr * finalWeight);
 	}
 	else if(iUIUseDepthBuffer == 2)
 		return ReShade::GetLinearizedDepth(texcoord).rrr;
