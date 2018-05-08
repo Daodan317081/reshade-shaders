@@ -57,12 +57,12 @@ uniform float fUIPencilLayerClipDetails <
     ui_step = 0.01;
 > = 0.0;
 
-uniform int iUIUseDepthBuffer <
+uniform int iUIOutlines <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_PENCILLAYER;
-	ui_label = "Use Depth Buffer Based Outlines";
-	ui_tooltip = "Outlines might obstruct Game UI";
-	ui_items = "No\0Yes\0Show Depth Buffer\0";
+	ui_label = "Outline Type";
+	ui_tooltip = "Using DepthBuffer might obstruct Game UI";
+	ui_items = "No\0Diffs\0Depth Buffer\0Show Depth Buffer\0";
 > = 1;
 
 uniform int iUINormalizeChroma <
@@ -235,7 +235,12 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	
 	//Create outlines based on depth buffer
 	float3 outlines = BLACK;
-	if(iUIUseDepthBuffer == 1) {
+	if(iUIOutlines == 1)
+	{
+		outlines = Tools::Functions::DiffEdges(ReShade::BackBuffer, texcoord).rrr * (fUIOutlineStrength.rrr * finalWeight);
+	}
+	else if(iUIOutlines == 2)
+	{
 		float depthC = ReShade::GetLinearizedDepth(texcoord);
 		float depthN = ReShade::GetLinearizedDepth(texcoord + float2(0.0, -ReShade::PixelSize.y));
 		float depthNE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, -ReShade::PixelSize.y));
@@ -252,7 +257,7 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		float diffSWNE = abs(depthSW - depthNE);
 		outlines = (diffNS + diffWE + diffNWSE + diffSWNE) * (1.0 - depthC) * (fUIOutlineStrength.rrr * finalWeight);
 	}
-	else if(iUIUseDepthBuffer == 2)
+	else if(iUIOutlines == 3)
 		return ReShade::GetLinearizedDepth(texcoord).rrr;
 
 	//Finalize pencil layer
