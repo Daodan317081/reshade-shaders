@@ -56,6 +56,7 @@ uniform int iUIEdgeType <
 #define CONV_PREWITT 1
 #define CONV_SCHARR 2
 #define CONV_SOBEL2 3
+#define CONV_DIFFS 4
 
 /*
 uniform int iUIEdgeMergeMethod <
@@ -519,5 +520,23 @@ namespace Tools {
             return lerp(step1, step2, continuity) + stepheight * stepnum;
         }
 
+        float DiffEdges(sampler s, float2 texcoord)
+        {
+            float valC = dot(tex2D(s, texcoord).rgb, LumaCoeff);
+            float valN = dot(tex2D(s, texcoord + float2(0.0, -ReShade::PixelSize.y)).rgb, LumaCoeff);
+            float valNE = dot(tex2D(s, texcoord + float2(ReShade::PixelSize.x, -ReShade::PixelSize.y)).rgb, LumaCoeff);
+            float valE = dot(tex2D(s, texcoord + float2(ReShade::PixelSize.x, 0.0)).rgb, LumaCoeff);
+            float valSE = dot(tex2D(s, texcoord + float2(ReShade::PixelSize.x, ReShade::PixelSize.y)).rgb, LumaCoeff);
+            float valS = dot(tex2D(s, texcoord + float2(0.0, ReShade::PixelSize.y)).rgb, LumaCoeff);
+            float valSW = dot(tex2D(s, texcoord + float2(-ReShade::PixelSize.x, ReShade::PixelSize.y)).rgb, LumaCoeff);
+            float valW = dot(tex2D(s, texcoord + float2(-ReShade::PixelSize.x, 0.0)).rgb, LumaCoeff);
+            float valNW = dot(tex2D(s, texcoord + float2(-ReShade::PixelSize.x, -ReShade::PixelSize.y)).rgb, LumaCoeff);
+
+            float diffNS = abs(valN - valS);
+            float diffWE = abs(valW - valE);
+            float diffNWSE = abs(valNW - valSE);
+            float diffSWNE = abs(valSW - valNE);
+            return saturate((diffNS + diffWE + diffNWSE + diffSWNE) * (1.0 - valC));
+        }
     }
 }
