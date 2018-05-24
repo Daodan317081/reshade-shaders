@@ -94,6 +94,14 @@ uniform float fUIStrengthPencilLayer2 <
 > = 0.5;
 
 ////////////////////////// Color //////////////////////////
+
+uniform int iUITint <
+	ui_type = "combo";
+	ui_category = "Color";
+	ui_label = "Tint";
+	ui_items = "Neutral\0Cyan\0Magenta\0Yellow\0";
+> = 0;
+
 uniform float fUIColorStrength <
 	ui_type = "drag";
 	ui_category = "Color";
@@ -167,7 +175,15 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	//Convert RGB to CMYK, set K to 0.0
 	float4 backbufferCMYK = Tools::Color::RGBtoCMYK(backbuffer);
 	backbufferCMYK.w = 0.0;
-	mask = Tools::Color::CMYKtoRGB(backbufferCMYK);
+
+	if(iUITint == 1)
+		backbufferCMYK.xyz += float3(0.2, -0.1, -0.2);
+	else if(iUITint == 2)
+		backbufferCMYK.xyz += float3(-0.1, 0.2, -0.1);
+	else if(iUITint == 3)
+		backbufferCMYK.xyz += float3(-0.1, -0.1, 0.4);
+
+	mask = Tools::Color::CMYKtoRGB(saturate(backbufferCMYK));
 	
 	//add chroma and posterized luma
 	image = chroma + lumaPoster;
