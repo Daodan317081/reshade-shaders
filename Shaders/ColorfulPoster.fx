@@ -36,7 +36,7 @@ uniform float fUIStepContinuity <
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_POSTERIZATION;
 	ui_label = "Continuity";
-    ui_tooltip = "Broken up <-> Connected";
+	ui_tooltip = "Broken up <-> Connected";
 	ui_min = 0.0; ui_max = 1.0;
 	ui_step = 0.01;
 > = 1.0;
@@ -140,13 +140,13 @@ sampler2D SamplerColorfulPosterChroma { Texture = texColorfulPosterChroma; };
 
 //Convolution gets currently done with samplers, so rendering chroma to a texture is necessary
 void Chroma_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord, out float3 chroma : SV_Target0, out float3 luma : SV_Target1) {
-    float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
+	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
 	luma = dot(color, LumaCoeff);
 	chroma = color - luma;
 }
 
 float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
-    
+	
 	/*******************************************************
 		Get BackBuffer
 	*******************************************************/
@@ -155,8 +155,8 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	/*******************************************************
 		Calculate chroma and luma; posterize luma
 	*******************************************************/
-    float luma = dot(backbuffer, LumaCoeff);
-    float3 chroma = backbuffer - luma;
+	float luma = dot(backbuffer, LumaCoeff);
+	float3 chroma = backbuffer - luma;
 	float3 lumaPoster = Tools::Functions::Posterize(luma, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType).rrr;
 
 	/*******************************************************
@@ -170,12 +170,12 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	mask = Tools::Color::CMYKtoRGB(backbufferCMYK);
 	
 	//add chroma and posterized luma
-    image = chroma + lumaPoster;
+	image = chroma + lumaPoster;
 
 	//Blend with hard light
 	image = lerp(2*image*mask, 1.0 - 2.0 * (1.0 - image) * (1.0 - mask), step(0.5, luma.r));
 
-    //color strength
+	//color strength
 	colorLayer = lerp(backbuffer, image, fUIColorStrength);
 
 	/*******************************************************
@@ -198,7 +198,7 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 
 	float3 pencilLayer1 = Tools::Functions::DiffEdges(ReShade::BackBuffer, texcoord).rrr * fUIStrengthDiffEdges;
 
-    float3 pencilLayer2;
+	float3 pencilLayer2;
 	
 	if(iUIConvSource == 1)
 		pencilLayer2 = Tools::Convolution::Edges(SamplerColorfulPosterLuma, texcoord, iUIEdgeType, iUIEdgeMergeMethod).rrr * fUIStrengthPencilLayer2;
@@ -213,32 +213,32 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	/*******************************************************
 		Create result
 	*******************************************************/
-    float3 result = lerp(colorLayer, BLACK, pencilLayer);
+	float3 result = lerp(colorLayer, BLACK, pencilLayer);
 
 	/*******************************************************
 		Show debug stuff
 	*******************************************************/
-    if(iUIDebugMaps == 1)
-        result = lumaPoster;
-    else if(iUIDebugMaps == 2)
-        result = outlinesDepthBuffer;
-    else if(iUIDebugMaps == 3)
-        result = pencilLayer1;
-    else if(iUIDebugMaps == 4)
-        result = pencilLayer2;
+	if(iUIDebugMaps == 1)
+		result = lumaPoster;
+	else if(iUIDebugMaps == 2)
+		result = outlinesDepthBuffer;
+	else if(iUIDebugMaps == 3)
+		result = pencilLayer1;
+	else if(iUIDebugMaps == 4)
+		result = pencilLayer2;
 	else if(iUIDebugMaps == 5)
-        result = pencilLayer;
+		result = pencilLayer;
 
 	if(iUIDebugOverlayPosterizeLevels == 1) {
 		sctpoint curveStep = Tools::Draw::NewPoint(MAGENTA, 1.0, float2(texcoord.x, 1.0 - Tools::Functions::Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)));
-        result = Tools::Draw::Point(result, curveStep, texcoord);
+		result = Tools::Draw::Point(result, curveStep, texcoord);
 		backbuffer = Tools::Draw::Point(backbuffer, curveStep, texcoord);
 	}
 
 	/*******************************************************
 		Set overall strength and return
 	*******************************************************/
-    return lerp(backbuffer, result, fUIStrength);
+	return lerp(backbuffer, result, fUIStrength);
 }
 
 technique ColorfulPoster
@@ -246,8 +246,8 @@ technique ColorfulPoster
 	pass {
 		VertexShader = PostProcessVS;
 		PixelShader = Chroma_PS;
-        RenderTarget0 = texColorfulPosterChroma;
-        RenderTarget1 = texColorfulPosterLuma;
+		RenderTarget0 = texColorfulPosterChroma;
+		RenderTarget1 = texColorfulPosterLuma;
 	}
 	pass {
 		VertexShader = PostProcessVS;
