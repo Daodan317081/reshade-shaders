@@ -4,11 +4,12 @@
 *******************************************************/
 
 #include "ReShade.fxh"
-#include "Stats.fxh"
 #include "Tools.fxh"
 
 #define UI_CATEGORY_POSTERIZATION "Posterization"
-#define UI_CATEGORY_PENCILLAYER "Pencil Layer"
+#define UI_CATEGORY_OUTLINES "Outlines"
+#define UI_CATEGORY_DIFFEDGES "Diff Edges"
+#define UI_CATEGORY_CONVOLUTIONSETTINGS "Convolution Settings"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
 
@@ -22,7 +23,7 @@ uniform int iUILumaLevels <
 	ui_category = UI_CATEGORY_POSTERIZATION;
 	ui_label = "Luma Posterize Levels";
 	ui_min = 1; ui_max = 20;
-> = 16;
+> = 8;
 
 uniform int iUIStepType <
 	ui_type = "combo";
@@ -38,7 +39,7 @@ uniform float fUIStepContinuity <
     ui_tooltip = "Broken up <-> Connected";
 	ui_min = 0.0; ui_max = 1.0;
 	ui_step = 0.01;
-> = 0.5;
+> = 1.0;
 
 uniform float fUISlope <
 	ui_type = "drag";
@@ -46,84 +47,57 @@ uniform float fUISlope <
 	ui_label = "Slope Logistic Curve";
 	ui_min = 0.0; ui_max = 40.0;
 	ui_step = 0.1;
-> = 20.0;
+> = 10.0;
 
 ////////////////////////// Pencil Layer //////////////////////////
-uniform float fUIPencilLayerClipDetails <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCILLAYER;
-	ui_label = "Clip Details";
-	ui_min = 0.0; ui_max = 1.0;
-    ui_step = 0.01;
-> = 0.0;
 
-uniform int iUIOutlines <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_PENCILLAYER;
-	ui_label = "Outline Type";
-	ui_tooltip = "Using DepthBuffer might obstruct Game UI";
-	ui_items = "No\0Diffs\0Depth Buffer\0Show Depth Buffer\0";
-> = 1;
-
-uniform int iUINormalizeChroma <
+uniform float fUIStrengthOutlinesDepthBuffer <
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCILLAYER;
-	ui_label = "Normalize Chroma";
-	ui_min = 0; ui_max = 1;
-> = 1;
-
-uniform int iUIOverrideLumaWeight <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCILLAYER;
-	ui_label = "Weight Luma With Average Luma";
-	ui_min = 0; ui_max = 1;
-> = 1;
-
-uniform int iUIOverrideSaturationWeight <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCILLAYER;
-	ui_label = "Weight Saturation With Average Saturation/Current Saturation";
-	ui_min = 0; ui_max = 2;
-> = 2;
-
-uniform float fUISaturationWeight <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCILLAYER;
-	ui_label = "Saturation Weight";
-	ui_tooltip = "Reduces the pencil strength\nin areas of high saturation\nDebug -> Saturation Weight";
-	ui_min = 0.0; ui_max = 1.0;
-	ui_step = 0.01;
-> = 0.3;
-
-uniform float fUILumaWeight <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCILLAYER;
-	ui_label = "Luma Weight";
-	ui_tooltip = "Reduces the pencil strength\nin bright areas\nDebug -> Luma Weight";
-	ui_min = 0.0; ui_max = 1.0;
-	ui_step = 0.01;
-> = 0.3;
-
-uniform float fUIOutlineStrength <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCILLAYER;
-	ui_label = "Outline Strength";
-	ui_min = 0.0; ui_max = 1.0;
-	ui_step = 0.001;
-> = 0.5;
-
-uniform float fUIStrengthPencilLayer <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCILLAYER;
-	ui_label = "Layer Strength";
+	ui_category = UI_CATEGORY_OUTLINES;
+	ui_label = "Strength";
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
+
+uniform float fUIStrengthDiffEdges <
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_DIFFEDGES;
+	ui_label = "Strength";
+	ui_min = 0.0; ui_max = 1.0;
+> = 1.0;
+
+uniform int iUIConvSource <
+	ui_type = "combo";
+	ui_category = UI_CATEGORY_CONVOLUTIONSETTINGS;
+	ui_label = "Source";
+	ui_items = "Color\0Luma\0Chroma\0";
+> = 2;
+
+uniform int iUIEdgeType <
+	ui_type = "combo";
+	ui_category = UI_CATEGORY_CONVOLUTIONSETTINGS;
+	ui_label = "Kernel Type";
+	ui_items = "CONV_SOBEL\0CONV_PREWITT\0CONV_SCHARR\0CONV_SOBEL2\0";
+> = 3;
+
+uniform int iUIEdgeMergeMethod <
+	ui_type = "combo";
+	ui_category = UI_CATEGORY_CONVOLUTIONSETTINGS;
+	ui_label = "Merge Method";
+	ui_items = "CONV_MUL\0CONV_DOT\0CONV_X\0CONV_Y\0CONV_ADD\0CONV_MAX\0";
+> = 5;
+
+uniform float fUIStrengthPencilLayer2 <
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_CONVOLUTIONSETTINGS;
+	ui_label = "Strength";
+	ui_min = 0.0; ui_max = 1.0;
+> = 0.5;
 
 ////////////////////////// Color //////////////////////////
 uniform float fUIColorStrength <
 	ui_type = "drag";
 	ui_category = "Color";
-	ui_label = "Color Strength";
+	ui_label = "Strength";
 	ui_min = 0.0; ui_max = 1.0;
 > = 0.5;
 
@@ -139,7 +113,7 @@ uniform int iUIDebugMaps <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_DEBUG;
 	ui_label = "Show Debug Maps";
-	ui_items = "Off\0[POSTERIZATION] Result\0[PENCIL LAYER]: Outlines\0[PENCIL LAYER] Chroma Edges\0[PENCIL LAYER] Saturation Weight\0[PENCIL LAYER] Luma Weight\0[PENCIL LAYER] Overall Weight\0[PENCIL LAYER] Result\0";
+	ui_items = "Off\0[POSTERIZATION] Result\0[PENCIL LAYER]: Outlines\0[PENCIL LAYER] Diff Edges\0[PENCIL LAYER] Convolution\0[PENCIL LAYER] Result\0";
 > = 0;
 
 ////////////////////////// Effect //////////////////////////
@@ -154,6 +128,9 @@ uniform float fUIStrength <
 	Textures
 ******************************************************************************/
 
+texture2D texColorfulPosterLuma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
+sampler2D SamplerColorfulPosterLuma { Texture = texColorfulPosterLuma; };
+
 texture2D texColorfulPosterChroma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
 sampler2D SamplerColorfulPosterChroma { Texture = texColorfulPosterChroma; };
 
@@ -162,11 +139,10 @@ sampler2D SamplerColorfulPosterChroma { Texture = texColorfulPosterChroma; };
 ******************************************************************************/
 
 //Convolution gets currently done with samplers, so rendering chroma to a texture is necessary
-void Chroma_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord,out float3 chroma : SV_Target0) {
+void Chroma_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord, out float3 chroma : SV_Target0, out float3 luma : SV_Target1) {
     float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
-	chroma = color - dot(color, LumaCoeff);
-	if(iUINormalizeChroma)
-		chroma = normalize(chroma);
+	luma = dot(color, LumaCoeff);
+	chroma = color - luma;
 }
 
 float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
@@ -203,65 +179,36 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	colorLayer = lerp(backbuffer, image, fUIColorStrength);
 
 	/*******************************************************
-		Create pencil layer
+		Create PencilLayer
 	*******************************************************/
-    float3 pencilLayer;
-	float3 chromaEdges = dot(Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, CONV_SOBEL, CONV_MAX), 0.5.xxx);
-	float saturation = Tools::Color::GetSaturation(backbuffer);
+	float depthC =  ReShade::GetLinearizedDepth(texcoord);
+	float depthN =  ReShade::GetLinearizedDepth(texcoord + float2(0.0, -ReShade::PixelSize.y));
+	float depthNE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, -ReShade::PixelSize.y));
+	float depthE =  ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, 0.0));
+	float depthSE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, ReShade::PixelSize.y));
+	float depthS =  ReShade::GetLinearizedDepth(texcoord + float2(0.0, ReShade::PixelSize.y));
+	float depthSW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, ReShade::PixelSize.y));
+	float depthW =  ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, 0.0));
+	float depthNW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, -ReShade::PixelSize.y));
+	float diffNS = abs(depthN - depthS);
+	float diffWE = abs(depthW - depthE);
+	float diffNWSE = abs(depthNW - depthSE);
+	float diffSWNE = abs(depthSW - depthNE);
+	float3 outlinesDepthBuffer = (diffNS + diffWE + diffNWSE + diffSWNE) * (1.0 - depthC) * fUIStrengthOutlinesDepthBuffer.rrr;
 
-	float satWeight = fUISaturationWeight;
-	float lumWeight = fUILumaWeight;
+	float3 pencilLayer1 = Tools::Functions::DiffEdges(ReShade::BackBuffer, texcoord).rrr * fUIStrengthDiffEdges;
 
-	if(iUIOverrideLumaWeight == 1) {
-		lumWeight = tex2Dfetch(shared_SamplerStatsAvgLuma, int4(0, 0, 0, 0)).r;
-	}
-	if(iUIOverrideSaturationWeight == 1) {
-		satWeight = Tools::Color::GetSaturation(tex2Dfetch(shared_SamplerStatsAvgColor, int4(0, 0, 0, 0)).rgb);
-	}
-	else if(iUIOverrideSaturationWeight == 2) {
-		satWeight = saturation;
-	}
+    float3 pencilLayer2;
 	
-	//Basically the same thing as changing the levels (as in Levels.fx) i guess... 
-	chromaEdges = clamp(chromaEdges, fUIPencilLayerClipDetails, 1.0);
-	chromaEdges = Tools::Functions::Map(chromaEdges.r, float2(fUIPencilLayerClipDetails, 1.0), FLOAT_RANGE).rrr;
-
-	//Reduce the strength of the pencil layer in (higly) saturated/bright areas (like faces for example)
-	float saturationWeight = 1.0 - saturate(pow(saturation, (satWeight) * 4.0));
-	float lumaWeight = 1.0 - saturate(pow(luma, (lumWeight) * 4.0));
-	float finalWeight = min(saturationWeight, lumaWeight);
-	
-	chromaEdges *= finalWeight;
-	
-	//Create outlines based on depth buffer
-	float3 outlines = BLACK;
-	if(iUIOutlines == 1)
-	{
-		outlines = Tools::Functions::DiffEdges(ReShade::BackBuffer, texcoord).rrr * (fUIOutlineStrength.rrr * finalWeight);
-	}
-	else if(iUIOutlines == 2)
-	{
-		float depthC = ReShade::GetLinearizedDepth(texcoord);
-		float depthN = ReShade::GetLinearizedDepth(texcoord + float2(0.0, -ReShade::PixelSize.y));
-		float depthNE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, -ReShade::PixelSize.y));
-		float depthE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, 0.0));
-		float depthSE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, ReShade::PixelSize.y));
-		float depthS = ReShade::GetLinearizedDepth(texcoord + float2(0.0, ReShade::PixelSize.y));
-		float depthSW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, ReShade::PixelSize.y));
-		float depthW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, 0.0));
-		float depthNW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, -ReShade::PixelSize.y));
-
-		float diffNS = abs(depthN - depthS);
-		float diffWE = abs(depthW - depthE);
-		float diffNWSE = abs(depthNW - depthSE);
-		float diffSWNE = abs(depthSW - depthNE);
-		outlines = (diffNS + diffWE + diffNWSE + diffSWNE) * (1.0 - depthC) * (fUIOutlineStrength.rrr * finalWeight);
-	}
-	else if(iUIOutlines == 3)
-		return ReShade::GetLinearizedDepth(texcoord).rrr;
+	if(iUIConvSource == 1)
+		pencilLayer2 = Tools::Convolution::Edges(SamplerColorfulPosterLuma, texcoord, iUIEdgeType, iUIEdgeMergeMethod).rrr * fUIStrengthPencilLayer2;
+	else if(iUIConvSource == 2)
+		pencilLayer2 = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, iUIEdgeType, iUIEdgeMergeMethod).rrr * fUIStrengthPencilLayer2;
+	else
+		pencilLayer2 = Tools::Convolution::Edges(ReShade::BackBuffer, texcoord, iUIEdgeType, iUIEdgeMergeMethod).rrr * fUIStrengthPencilLayer2;
 
 	//Finalize pencil layer
-	pencilLayer = saturate(max(chromaEdges, outlines) * fUIStrengthPencilLayer);
+	float3 pencilLayer = saturate(outlinesDepthBuffer + pencilLayer1 + pencilLayer2);
 
 	/*******************************************************
 		Create result
@@ -274,16 +221,12 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
     if(iUIDebugMaps == 1)
         result = lumaPoster;
     else if(iUIDebugMaps == 2)
-        result = outlines;
+        result = outlinesDepthBuffer;
     else if(iUIDebugMaps == 3)
-        result = chromaEdges;
+        result = pencilLayer1;
     else if(iUIDebugMaps == 4)
-        result = saturationWeight;
-    else if(iUIDebugMaps == 5)
-        result = lumaWeight;
-    else if(iUIDebugMaps == 6)
-        result = finalWeight;
-    else if(iUIDebugMaps == 7)
+        result = pencilLayer2;
+	else if(iUIDebugMaps == 5)
         result = pencilLayer;
 
 	if(iUIDebugOverlayPosterizeLevels == 1) {
@@ -304,6 +247,7 @@ technique ColorfulPoster
 		VertexShader = PostProcessVS;
 		PixelShader = Chroma_PS;
         RenderTarget0 = texColorfulPosterChroma;
+        RenderTarget1 = texColorfulPosterLuma;
 	}
 	pass {
 		VertexShader = PostProcessVS;
