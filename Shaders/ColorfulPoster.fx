@@ -121,7 +121,7 @@ uniform int iUIDebugMaps <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_DEBUG;
 	ui_label = "Show Debug Maps";
-	ui_items = "Off\0[POSTERIZATION] Result\0[PENCIL LAYER]: Outlines\0[PENCIL LAYER] Diff Edges\0[PENCIL LAYER] Convolution\0[PENCIL LAYER] Result\0";
+	ui_items = "Off\0[POSTERIZATION] Result\0[PENCIL LAYER]: Outlines\0[PENCIL LAYER] Diff Edges\0[PENCIL LAYER] Convolution\0[PENCIL LAYER] Result\0Show DepthBuffer\0";
 > = 0;
 
 ////////////////////////// Effect //////////////////////////
@@ -244,6 +244,8 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		result = pencilLayer2;
 	else if(iUIDebugMaps == 5)
 		result = pencilLayer;
+	else if(iUIDebugMaps == 6)
+		return ReShade::GetLinearizedDepth(texcoord).rrr;
 
 	if(iUIDebugOverlayPosterizeLevels == 1) {
 		sctpoint curveStep = Tools::Draw::NewPoint(MAGENTA, 1.0, float2(texcoord.x, 1.0 - Tools::Functions::Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)));
