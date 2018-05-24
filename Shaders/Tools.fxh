@@ -62,7 +62,7 @@ uniform int iUIEdgeType <
 uniform int iUIEdgeMergeMethod <
 	ui_type = "combo";
 	ui_label = "Edge merge method";
-	ui_items = "CONV_MUL\CONV_DOT\CONV_X\0CONV_Y\0CONV_ADD\0CONV_MAX\0";
+	ui_items = "CONV_MUL\0CONV_DOT\0CONV_X\0CONV_Y\0CONV_ADD\0CONV_MAX\0";
 > = 0;
 */
 #define CONV_MUL 0
