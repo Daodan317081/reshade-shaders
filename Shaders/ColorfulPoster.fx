@@ -52,25 +52,26 @@ uniform float fUISlope <
 ////////////////////////// Pencil Layer //////////////////////////
 
 //Outlines
-uniform int iUIOutlinesLevel <
+uniform int iUIOutlinesEnableThreshold <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_OUTLINES;
-	ui_label = "Level Outlines";
+	ui_label = "Enable Threshold";
 	ui_items = "Off\0On\0";
 > = 0;
 
-uniform float fUIOutlinesLevelThreshold <
+uniform float fUIOutlinesThreshold <
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_OUTLINES;
-	ui_label = "Level Threshold";
+	ui_label = "Threshold";
 	ui_min = 0.0; ui_max = 1.0;
 	ui_step = 0.001;
 > = 0.5;
 
-uniform int iUIOutlinesWeighWithDistance <
+uniform int iUIOutlinesFadeWithDistance <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_OUTLINES;
 	ui_label = "Distance Weight";
+	ui_tooltip = "Outlines fade with increasing distance (or inverse)";
 	ui_items = "No\0Decrease\0Increase\0";
 > = 0;
 
@@ -237,12 +238,12 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	float diffSWNE = abs(depthSW - depthNE);
 	float3 outlinesDepthBuffer = (diffNS + diffWE + diffNWSE + diffSWNE);
 
-	if(iUIOutlinesLevel == 1)
-		outlinesDepthBuffer = outlinesDepthBuffer < fUIOutlinesLevelThreshold ? 0.0 : 1.0;
+	if(iUIOutlinesEnableThreshold == 1)
+		outlinesDepthBuffer = outlinesDepthBuffer < fUIOutlinesThreshold ? 0.0 : 1.0;
 
-	if(iUIOutlinesWeighWithDistance == 1)
+	if(iUIOutlinesFadeWithDistance == 1)
 		outlinesDepthBuffer *= (1.0 - depthC);
-	else if(iUIOutlinesWeighWithDistance == 2)
+	else if(iUIOutlinesFadeWithDistance == 2)
 		outlinesDepthBuffer *= depthC;
 		
 	outlinesDepthBuffer *= fUIOutlinesStrength.rrr;
