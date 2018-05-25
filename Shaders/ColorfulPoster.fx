@@ -9,7 +9,7 @@
 #define UI_CATEGORY_POSTERIZATION "Posterization"
 #define UI_CATEGORY_OUTLINES "Outlines"
 #define UI_CATEGORY_DIFFEDGES "Diff Edges"
-#define UI_CATEGORY_CONVOLUTIONSETTINGS "Convolution Settings"
+#define UI_CATEGORY_CONVOLUTION "Convolution Settings"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
 
@@ -51,51 +51,76 @@ uniform float fUISlope <
 
 ////////////////////////// Pencil Layer //////////////////////////
 
-uniform float fUIStrengthOutlinesDepthBuffer <
+//Outlines
+uniform int iUIOutlinesLevel <
+	ui_type = "combo";
+	ui_category = UI_CATEGORY_OUTLINES;
+	ui_label = "Level Outlines";
+	ui_items = "Off\0On\0";
+> = 0;
+
+uniform float fUIOutlinesLevelThreshold <
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_OUTLINES;
+	ui_label = "Level Threshold";
+	ui_min = 0.0; ui_max = 1.0;
+	ui_step = 0.001;
+> = 0.5;
+
+uniform int iUIOutlinesWeighWithDistance <
+	ui_type = "combo";
+	ui_category = UI_CATEGORY_OUTLINES;
+	ui_label = "Distance Weight";
+	ui_items = "No\0Decrease\0Increase\0";
+> = 0;
+
+uniform float fUIOutlinesStrength <
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_OUTLINES;
 	ui_label = "Strength";
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
-uniform float fUIStrengthDiffEdges <
+//DiffEdges
+uniform float fUIDiffEdgesStrength <
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_DIFFEDGES;
 	ui_label = "Strength";
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
+//Convolution
 uniform int iUIConvSource <
 	ui_type = "combo";
-	ui_category = UI_CATEGORY_CONVOLUTIONSETTINGS;
+	ui_category = UI_CATEGORY_CONVOLUTION;
 	ui_label = "Source";
 	ui_items = "Color\0Luma\0Chroma\0";
 > = 2;
 
-uniform int iUIEdgeType <
+uniform int iUIConvKernel <
 	ui_type = "combo";
-	ui_category = UI_CATEGORY_CONVOLUTIONSETTINGS;
+	ui_category = UI_CATEGORY_CONVOLUTION;
 	ui_label = "Kernel Type";
 	ui_items = "CONV_SOBEL\0CONV_PREWITT\0CONV_SCHARR\0CONV_SOBEL2\0";
 > = 3;
 
-uniform int iUIEdgeMergeMethod <
+uniform int iUIConvMergeMethod <
 	ui_type = "combo";
-	ui_category = UI_CATEGORY_CONVOLUTIONSETTINGS;
+	ui_category = UI_CATEGORY_CONVOLUTION;
 	ui_label = "Merge Method";
 	ui_items = "CONV_MUL\0CONV_DOT\0CONV_X\0CONV_Y\0CONV_ADD\0CONV_MAX\0";
 > = 5;
 
-uniform float fUIStrengthPencilLayer2 <
+uniform float fUIConvStrength <
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_CONVOLUTIONSETTINGS;
+	ui_category = UI_CATEGORY_CONVOLUTION;
 	ui_label = "Strength";
 	ui_min = 0.0; ui_max = 1.0;
 > = 0.5;
 
 ////////////////////////// Color //////////////////////////
 
-uniform int iUITint <
+uniform int iUIColorTint <
 	ui_type = "combo";
 	ui_category = "Color";
 	ui_label = "Tint";
@@ -176,11 +201,11 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	float4 backbufferCMYK = Tools::Color::RGBtoCMYK(backbuffer);
 	backbufferCMYK.w = 0.0;
 
-	if(iUITint == 1)
+	if(iUIColorTint == 1)
 		backbufferCMYK.xyz += float3(0.2, -0.1, -0.2);
-	else if(iUITint == 2)
+	else if(iUIColorTint == 2)
 		backbufferCMYK.xyz += float3(-0.1, 0.2, -0.1);
-	else if(iUITint == 3)
+	else if(iUIColorTint == 3)
 		backbufferCMYK.xyz += float3(-0.1, -0.1, 0.4);
 
 	mask = Tools::Color::CMYKtoRGB(saturate(backbufferCMYK));
@@ -210,18 +235,29 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	float diffWE = abs(depthW - depthE);
 	float diffNWSE = abs(depthNW - depthSE);
 	float diffSWNE = abs(depthSW - depthNE);
-	float3 outlinesDepthBuffer = (diffNS + diffWE + diffNWSE + diffSWNE) * (1.0 - depthC) * fUIStrengthOutlinesDepthBuffer.rrr;
+	float3 outlinesDepthBuffer = (diffNS + diffWE + diffNWSE + diffSWNE);
 
-	float3 pencilLayer1 = Tools::Functions::DiffEdges(ReShade::BackBuffer, texcoord).rrr * fUIStrengthDiffEdges;
+	if(iUIOutlinesLevel == 1)
+		outlinesDepthBuffer = outlinesDepthBuffer < fUIOutlinesLevelThreshold ? 0.0 : 1.0;
+
+	if(iUIOutlinesWeighWithDistance == 1)
+		outlinesDepthBuffer *= (1.0 - depthC);
+	else if(iUIOutlinesWeighWithDistance == 2)
+		outlinesDepthBuffer *= depthC;
+		
+	outlinesDepthBuffer *= fUIOutlinesStrength.rrr;
+
+
+	float3 pencilLayer1 = Tools::Functions::DiffEdges(ReShade::BackBuffer, texcoord).rrr * fUIDiffEdgesStrength;
 
 	float3 pencilLayer2;
 	
 	if(iUIConvSource == 1)
-		pencilLayer2 = Tools::Convolution::Edges(SamplerColorfulPosterLuma, texcoord, iUIEdgeType, iUIEdgeMergeMethod).rrr * fUIStrengthPencilLayer2;
+		pencilLayer2 = Tools::Convolution::Edges(SamplerColorfulPosterLuma, texcoord, iUIConvKernel, iUIConvMergeMethod).rrr * fUIConvStrength;
 	else if(iUIConvSource == 2)
-		pencilLayer2 = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, iUIEdgeType, iUIEdgeMergeMethod).rrr * fUIStrengthPencilLayer2;
+		pencilLayer2 = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, iUIConvKernel, iUIConvMergeMethod).rrr * fUIConvStrength;
 	else
-		pencilLayer2 = Tools::Convolution::Edges(ReShade::BackBuffer, texcoord, iUIEdgeType, iUIEdgeMergeMethod).rrr * fUIStrengthPencilLayer2;
+		pencilLayer2 = Tools::Convolution::Edges(ReShade::BackBuffer, texcoord, iUIConvKernel, iUIConvMergeMethod).rrr * fUIConvStrength;
 
 	//Finalize pencil layer
 	float3 pencilLayer = saturate(outlinesDepthBuffer + pencilLayer1 + pencilLayer2);
