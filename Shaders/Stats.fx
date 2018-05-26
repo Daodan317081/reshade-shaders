@@ -93,7 +93,7 @@ void Create_Stats_Image_PS(float4 position : SV_Position, float2 texcoord : TEXC
     float3 tmpScale = lerp(cold, warm, texcoord.x);
 
 	sctpoint scaleLuma = Tools::Draw::NewPoint(texcoord.x, offset, float2(texcoord.x, texcoord.y < 0.5 ? texcoord.y : -1));
-    sctpoint markerAvgLuma = Tools::Draw::NewPoint(avgColor, offset, float2(avgLuma, texcoord.y < 0.5 ? texcoord.y : -1));
+    sctpoint markerAvgLuma = Tools::Draw::NewPoint(MAGENTA, offset, float2(avgLuma, texcoord.y < 0.5 ? texcoord.y : -1));
 
     sctpoint scaleColorTemp = Tools::Draw::NewPoint(tmpScale, offset, float2(texcoord.x, texcoord.y > 0.5 ? texcoord.y : -1));
     sctpoint markerAvgColorTemp = Tools::Draw::NewPoint(BLACK, offset, float2(avgColorTemp, texcoord.y > 0.5 ? texcoord.y : -1));
