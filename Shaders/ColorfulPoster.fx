@@ -7,9 +7,9 @@
 #include "Tools.fxh"
 
 #define UI_CATEGORY_POSTERIZATION "Posterization"
-#define UI_CATEGORY_OUTLINES "Outlines"
-#define UI_CATEGORY_DIFFEDGES "Diff Edges"
-#define UI_CATEGORY_CONVOLUTION "Convolution Settings"
+#define UI_CATEGORY_OUTLINES "Outlines (needs depth buffer)"
+#define UI_CATEGORY_EDGES "Edge Detection Weight"
+#define UI_CATEGORY_COLOR "Color"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
 
@@ -82,61 +82,39 @@ uniform float fUIOutlinesStrength <
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
-//DiffEdges
+//Edge Detection
 uniform float fUIDiffEdgesStrength <
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_DIFFEDGES;
-	ui_label = "Strength";
+	ui_category = UI_CATEGORY_EDGES;
+	ui_label = "Luma";
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
-//Convolution
-uniform int iUIConvSource <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_CONVOLUTION;
-	ui_label = "Source";
-	ui_items = "Color\0Luma\0Chroma\0";
-> = 2;
-
-uniform int iUIConvKernel <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_CONVOLUTION;
-	ui_label = "Kernel Type";
-	ui_items = "CONV_SOBEL\0CONV_PREWITT\0CONV_SCHARR\0CONV_SOBEL2\0";
-> = 3;
-
-uniform int iUIConvMergeMethod <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_CONVOLUTION;
-	ui_label = "Merge Method";
-	ui_items = "CONV_MUL\0CONV_DOT\0CONV_X\0CONV_Y\0CONV_ADD\0CONV_MAX\0";
-> = 5;
-
 uniform float fUIConvStrength <
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_CONVOLUTION;
-	ui_label = "Strength";
+	ui_category = UI_CATEGORY_EDGES;
+	ui_label = "Chroma";
 	ui_min = 0.0; ui_max = 1.0;
-> = 0.5;
+> = 1.0;
 
 ////////////////////////// Color //////////////////////////
 
 uniform float3 fUILineColor <
 	ui_type = "color";
-	ui_category = "Color";
+	ui_category = UI_CATEGORY_COLOR;
 	ui_label = "Line Color";
 > = float3(0.0, 0.0, 0.0);
 
 uniform int iUIColorTint <
 	ui_type = "combo";
-	ui_category = "Color";
+	ui_category = UI_CATEGORY_COLOR;
 	ui_label = "Tint";
 	ui_items = "Neutral\0Cyan\0Magenta\0Yellow\0";
 > = 0;
 
 uniform float fUIColorStrength <
 	ui_type = "drag";
-	ui_category = "Color";
+	ui_category = UI_CATEGORY_COLOR;
 	ui_label = "Strength";
 	ui_min = 0.0; ui_max = 1.0;
 > = 0.5;
@@ -168,9 +146,6 @@ uniform float fUIStrength <
 	Textures
 ******************************************************************************/
 
-texture2D texColorfulPosterLuma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
-sampler2D SamplerColorfulPosterLuma { Texture = texColorfulPosterLuma; };
-
 texture2D texColorfulPosterChroma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
 sampler2D SamplerColorfulPosterChroma { Texture = texColorfulPosterChroma; };
 
@@ -179,10 +154,9 @@ sampler2D SamplerColorfulPosterChroma { Texture = texColorfulPosterChroma; };
 ******************************************************************************/
 
 //Convolution gets currently done with samplers, so rendering chroma to a texture is necessary
-void Chroma_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord, out float3 chroma : SV_Target0, out float3 luma : SV_Target1) {
+void Chroma_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord, out float3 chroma : SV_Target0) {
 	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
-	luma = dot(color, LumaCoeff);
-	chroma = color - luma;
+	chroma = color - dot(color, LumaCoeff);
 }
 
 float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
@@ -255,19 +229,12 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	outlinesDepthBuffer *= fUIOutlinesStrength.rrr;
 
 
-	float3 pencilLayer1 = Tools::Functions::DiffEdges(ReShade::BackBuffer, texcoord).rrr * fUIDiffEdgesStrength;
+	float3 lumaEdges = Tools::Functions::DiffEdges(ReShade::BackBuffer, texcoord).rrr * fUIDiffEdgesStrength;
 
-	float3 pencilLayer2;
-	
-	if(iUIConvSource == 1)
-		pencilLayer2 = Tools::Convolution::Edges(SamplerColorfulPosterLuma, texcoord, iUIConvKernel, iUIConvMergeMethod).rrr * fUIConvStrength;
-	else if(iUIConvSource == 2)
-		pencilLayer2 = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, iUIConvKernel, iUIConvMergeMethod).rrr * fUIConvStrength;
-	else
-		pencilLayer2 = Tools::Convolution::Edges(ReShade::BackBuffer, texcoord, iUIConvKernel, iUIConvMergeMethod).rrr * fUIConvStrength;
+	float3 chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, CONV_SOBEL2, CONV_MAX).rrr * fUIConvStrength;
 
 	//Finalize pencil layer
-	float3 pencilLayer = saturate(outlinesDepthBuffer + pencilLayer1 + pencilLayer2);
+	float3 pencilLayer = saturate(outlinesDepthBuffer + lumaEdges + chromaEdges);
 
 	/*******************************************************
 		Create result
@@ -282,9 +249,9 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	else if(iUIDebugMaps == 2)
 		result = lerp(1.0.rrr, fUILineColor, outlinesDepthBuffer);
 	else if(iUIDebugMaps == 3)
-		result = lerp(1.0.rrr, fUILineColor, pencilLayer1);
+		result = lerp(1.0.rrr, fUILineColor, lumaEdges);
 	else if(iUIDebugMaps == 4)
-		result = lerp(1.0.rrr, fUILineColor, pencilLayer2);
+		result = lerp(1.0.rrr, fUILineColor, chromaEdges);
 	else if(iUIDebugMaps == 5)
 		result = lerp(1.0.rrr, fUILineColor, pencilLayer);
 	else if(iUIDebugMaps == 6)
@@ -308,7 +275,6 @@ technique ColorfulPoster
 		VertexShader = PostProcessVS;
 		PixelShader = Chroma_PS;
 		RenderTarget0 = texColorfulPosterChroma;
-		RenderTarget1 = texColorfulPosterLuma;
 	}
 	pass {
 		VertexShader = PostProcessVS;
