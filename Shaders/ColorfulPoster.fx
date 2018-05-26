@@ -131,7 +131,7 @@ uniform int iUIDebugMaps <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_DEBUG;
 	ui_label = "Show Debug Maps";
-	ui_items = "Off\0[POSTERIZATION] Result\0[PENCIL LAYER]: Outlines\0[PENCIL LAYER] Diff Edges\0[PENCIL LAYER] Convolution\0[PENCIL LAYER] Result\0Show DepthBuffer\0";
+	ui_items = "Off\0Posterized Luma\0Depth Buffer Outlines\0Luma Edges\0Chroma Edges\0Pencil Layer\0Show Depth Buffer\0";
 > = 0;
 
 ////////////////////////// Effect //////////////////////////
