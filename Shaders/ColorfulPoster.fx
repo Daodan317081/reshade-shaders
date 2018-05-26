@@ -121,6 +121,12 @@ uniform float fUIConvStrength <
 
 ////////////////////////// Color //////////////////////////
 
+uniform float3 fUILineColor <
+	ui_type = "color";
+	ui_category = "Color";
+	ui_label = "Line Color";
+> = float3(0.0, 0.0, 0.0);
+
 uniform int iUIColorTint <
 	ui_type = "combo";
 	ui_category = "Color";
@@ -266,7 +272,7 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	/*******************************************************
 		Create result
 	*******************************************************/
-	float3 result = lerp(colorLayer, BLACK, pencilLayer);
+	float3 result = lerp(colorLayer, fUILineColor, pencilLayer);
 
 	/*******************************************************
 		Show debug stuff
@@ -274,13 +280,13 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	if(iUIDebugMaps == 1)
 		result = lumaPoster;
 	else if(iUIDebugMaps == 2)
-		result = outlinesDepthBuffer;
+		result = lerp(1.0.rrr, fUILineColor, outlinesDepthBuffer);
 	else if(iUIDebugMaps == 3)
-		result = pencilLayer1;
+		result = lerp(1.0.rrr, fUILineColor, pencilLayer1);
 	else if(iUIDebugMaps == 4)
-		result = pencilLayer2;
+		result = lerp(1.0.rrr, fUILineColor, pencilLayer2);
 	else if(iUIDebugMaps == 5)
-		result = pencilLayer;
+		result = lerp(1.0.rrr, fUILineColor, pencilLayer);
 	else if(iUIDebugMaps == 6)
 		return ReShade::GetLinearizedDepth(texcoord).rrr;
 
