@@ -10,7 +10,6 @@
 	Uniforms
 ******************************************************************************/
 
-////////////////////////// Effect //////////////////////////
 #ifdef ASPECT_RATIO_FLOAT
 uniform float fUIAspectRatio <
 	ui_type = "drag";
