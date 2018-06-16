@@ -14,18 +14,21 @@
 #ifdef ASPECT_RATIO_FLOAT
 uniform float fUIAspectRatio <
 	ui_type = "drag";
+	ui_label = "Aspect Ratio";
 	ui_min = 0.0; ui_max = 20.0;
 	ui_step = 0.01;
 > = 1.0;
 #else
 uniform int2 iUIAspectRatio <
 	ui_type = "drag";
+	ui_label = "Aspect Ratio";
 	ui_min = 0; ui_max = 20;
 > = int2(16, 9);
 #endif
 
-uniform int iUIGridFrations <
+uniform int iUIGridFractions <
 	ui_type = "drag";
+	ui_label = "Fractions";
 	ui_min = 1; ui_max = 5;
 > = 3;
 
@@ -55,12 +58,12 @@ float3 AspectRatioComposition_PS(float4 vpos : SV_Position, float2 texcoord : Te
 	if(userAspectRatio < ReShade::AspectRatio)
 	{
 		borderSize = (BUFFER_WIDTH - BUFFER_HEIGHT * userAspectRatio) / 2.0;
-		fractionWidth = (BUFFER_WIDTH - 2 * borderSize) / iUIGridFrations;
+		fractionWidth = (BUFFER_WIDTH - 2 * borderSize) / iUIGridFractions;
 		
 		if(vpos.x < borderSize || vpos.x > (BUFFER_WIDTH - borderSize))
 			retVal = UIGridColor.rgb;
 
-		if( (vpos.y % (BUFFER_HEIGHT / iUIGridFrations)) < 1)
+		if( (vpos.y % (BUFFER_HEIGHT / iUIGridFractions)) < 1)
 			retVal = UIGridColor.rgb;
 
 		if( ((vpos.x - borderSize) % fractionWidth) < 1)
@@ -69,12 +72,12 @@ float3 AspectRatioComposition_PS(float4 vpos : SV_Position, float2 texcoord : Te
 	else
 	{
 		borderSize = (BUFFER_HEIGHT - BUFFER_WIDTH / userAspectRatio) / 2.0;
-		fractionWidth = (BUFFER_HEIGHT - 2 * borderSize) / iUIGridFrations;
+		fractionWidth = (BUFFER_HEIGHT - 2 * borderSize) / iUIGridFractions;
 
 		if(vpos.y < borderSize || vpos.y > (BUFFER_HEIGHT - borderSize))
 			retVal = UIGridColor.rgb;
 
-		if( (vpos.x % (BUFFER_WIDTH / iUIGridFrations)) < 1)
+		if( (vpos.x % (BUFFER_WIDTH / iUIGridFractions)) < 1)
 			retVal = UIGridColor.rgb;
 			
 		if( ((vpos.y - borderSize) % fractionWidth) < 1)
