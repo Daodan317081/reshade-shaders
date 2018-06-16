@@ -25,7 +25,7 @@
 uniform int iUILayerMode <
 	ui_type = "combo";
 	ui_label = "Layer Mode";
-	ui_items = "LAYER_MODE_NORMAL\0LAYER_MODE_MULTIPLY\0LAYER_MODE_DIVIDE\0LAYER_MODE_SCREEN\0LAYER_MODE_OVERLAY\0LAYER_MODE_DODGE\0LAYER_MODE_BURN\0LAYER_MODE_HARDLIGHT\0LAYER_MODE_SOFTLIGHT\0LAYER_MODE_GRAINEXTRACT\0LAYER_MODE_GRAINMERGE\0LAYER_MODE_DIFFERENCE\0LAYER_MODE_ADDITION\0LAYER_MODE_SUBTRACT\0LAYER_MODE_DARKENONLY\0LAYER_MODE_LIGHTENONLY\0";
+	ui_items = "LAYER_MODE_NORMAL\0LAYER_MODE_MULTIPLY\0LAYER_MODE_DIVIDE\0LAYER_MODE_SCREEN\0LAYER_MODE_OVERLAY\0LAYER_MODE_DODGE\0LAYER_MODE_BURN\0LAYER_MODE_HARDLIGHT\0LAYER_MODE_SOFTLIGHT\0LAYER_MODE_GRAINEXTRACT\0LAYER_MODE_GRAINMERGE\0LAYER_MODE_DIFFERENCE\0LAYER_MODE_ADDITION\0LAYER_MODE_SUBTRACT\0LAYER_MODE_DARKENONLY\0LAYER_MODE_LIGHTENONLY\0LAYER_MODE_VIVIDLIGHT\0";
 > = 0;
 */
 #define LAYER_MODE_NORMAL			0
@@ -44,6 +44,7 @@ uniform int iUILayerMode <
 #define LAYER_MODE_SUBTRACT		    13
 #define LAYER_MODE_DARKENONLY		14
 #define LAYER_MODE_LIGHTENONLY	    15
+#define LAYER_MODE_VIVIDLIGHT		16
 
 /*
 uniform int iUIEdgeType <
@@ -227,7 +228,11 @@ namespace Tools {
             else if(mode == LAYER_MODE_BURN)
                 E = 1.0 - (1.0 - image) / (mask + 0.00001);
             else if(mode == LAYER_MODE_HARDLIGHT)
-                E = lerp(2*image*mask, 1.0 - 2.0 * (1.0 - image) * (1.0 - mask), max(image.r, max(image.g, image.b)) > 0.5 ? 0.0 : 1.0);
+                E = lerp(
+                            2*image*mask,
+                            1.0 - 2.0 * (1.0 - image) * (1.0 - mask),
+                            max(image.r, max(image.g, image.b)) > 0.5 ? 0.0 : 1.0
+                        );
             else if(mode == LAYER_MODE_GRAINEXTRACT)
                 E = image - mask + 0.5;
             else if(mode == LAYER_MODE_GRAINMERGE)
@@ -242,6 +247,12 @@ namespace Tools {
                 E = min(image, mask);
             else if(mode == LAYER_MODE_LIGHTENONLY)
                 E = max(image, mask);
+            else if(mode == LAYER_MODE_VIVIDLIGHT)
+                E = lerp(
+                            max(1.0 - ((1.0 - image) / ((2.0 * mask) + 1e-9)), 0.0),
+                            min(image / (2 * (1.0 - mask) + 1e-9), 1.0),
+                            max(mask.r, max(mask.g, mask.b)) <= 0.5 ? 0.0 : 1.0
+                        );
 
             return saturate(E);
         }
