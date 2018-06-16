@@ -1,3 +1,8 @@
+/*******************************************************
+	ReShade Shader: AspectRatioComposition
+	https://github.com/Daodan317081/reshade-shaders
+*******************************************************/
+
 #include "ReShade.fxh"
 
 
