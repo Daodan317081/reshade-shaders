@@ -5,6 +5,8 @@
 
 #include "ReShade.fxh"
 
+#define GOLDEN_RATIO 1.6180339887
+#define INV_GOLDEN_RATIO  1.0 / 1.6180339887
 
 /******************************************************************************
 	Uniforms
@@ -14,6 +16,7 @@
 uniform float fUIAspectRatio <
 	ui_type = "drag";
 	ui_label = "Aspect Ratio";
+	ui_tooltip = "To control aspect ratio with an int2\nremove 'ASPECT_RATIO_FLOAT=1' from preprocessor\nor set it to '0'";
 	ui_min = 0.0; ui_max = 20.0;
 	ui_step = 0.01;
 > = 1.0;
@@ -21,13 +24,21 @@ uniform float fUIAspectRatio <
 uniform int2 iUIAspectRatio <
 	ui_type = "drag";
 	ui_label = "Aspect Ratio";
+	ui_tooltip = "To control aspect ratio with a float\nadd 'ASPECT_RATIO_FLOAT=1' to preprocessor";
 	ui_min = 0; ui_max = 20;
 > = int2(16, 9);
 #endif
 
+uniform int iUIGridType <
+	ui_type = "combo";
+	ui_label = "Grid Type";
+	ui_items = "Fractions\0Golden Ratio\0";
+> = 0;
+
 uniform int iUIGridFractions <
 	ui_type = "drag";
 	ui_label = "Fractions";
+	ui_tooltip = "Set 'Grid Type' to 'Fractions'";
 	ui_min = 1; ui_max = 5;
 > = 3;
 
@@ -37,10 +48,54 @@ uniform float4 UIGridColor <
 > = float4(0.0, 0.0, 0.0, 1.0);
 
 /******************************************************************************
+	Functions
+******************************************************************************/
+
+float3 DrawGrid(float3 backbuffer, float3 gridColor, float aspectRatio, float fraction, float4 vpos)
+{
+	float borderSize;
+	float fractionWidth;
+	
+	float3 retVal = backbuffer;
+
+	if(aspectRatio < ReShade::AspectRatio)
+	{
+		borderSize = (BUFFER_WIDTH - BUFFER_HEIGHT * aspectRatio) / 2.0;
+		fractionWidth = (BUFFER_WIDTH - 2 * borderSize) / fraction;
+
+		if(vpos.x < borderSize || vpos.x > (BUFFER_WIDTH - borderSize))
+			retVal = gridColor;
+
+		if((vpos.y % (BUFFER_HEIGHT / fraction)) < 1)
+			retVal = gridColor;
+
+		if(((vpos.x - borderSize) % fractionWidth) < 1)
+			retVal = gridColor;	
+	}
+	else
+	{
+		borderSize = (BUFFER_HEIGHT - BUFFER_WIDTH / aspectRatio) / 2.0;
+		fractionWidth = (BUFFER_HEIGHT - 2 * borderSize) / fraction;
+
+		if(vpos.y < borderSize || vpos.y > (BUFFER_HEIGHT - borderSize))
+			retVal = gridColor;
+
+		if((vpos.x % (BUFFER_WIDTH / fraction)) < 1)
+			retVal = gridColor;
+			
+		if(((vpos.y - borderSize) % fractionWidth) < 1)
+			retVal = gridColor;
+	}
+
+	return retVal;
+}
+
+/******************************************************************************
 	Pixel Shader
 ******************************************************************************/
 
-float3 AspectRatioComposition_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
+float3 AspectRatioComposition_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
+{
     float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
 	float3 retVal = color;
 
@@ -52,43 +107,22 @@ float3 AspectRatioComposition_PS(float4 vpos : SV_Position, float2 texcoord : Te
 	userAspectRatio = (float)iUIAspectRatio.x / (float)iUIAspectRatio.y;
 	#endif
 
-	float borderSize, fractionWidth;
-
-	if(userAspectRatio < ReShade::AspectRatio)
-	{
-		borderSize = (BUFFER_WIDTH - BUFFER_HEIGHT * userAspectRatio) / 2.0;
-		fractionWidth = (BUFFER_WIDTH - 2 * borderSize) / iUIGridFractions;
-		
-		if(vpos.x < borderSize || vpos.x > (BUFFER_WIDTH - borderSize))
-			retVal = UIGridColor.rgb;
-
-		if( (vpos.y % (BUFFER_HEIGHT / iUIGridFractions)) < 1)
-			retVal = UIGridColor.rgb;
-
-		if( ((vpos.x - borderSize) % fractionWidth) < 1)
-			retVal = UIGridColor.rgb;		
-	}
+	if(iUIGridType == 0)
+		retVal = DrawGrid(color, UIGridColor, userAspectRatio, iUIGridFractions, vpos);
 	else
 	{
-		borderSize = (BUFFER_HEIGHT - BUFFER_WIDTH / userAspectRatio) / 2.0;
-		fractionWidth = (BUFFER_HEIGHT - 2 * borderSize) / iUIGridFractions;
-
-		if(vpos.y < borderSize || vpos.y > (BUFFER_HEIGHT - borderSize))
-			retVal = UIGridColor.rgb;
-
-		if( (vpos.x % (BUFFER_WIDTH / iUIGridFractions)) < 1)
-			retVal = UIGridColor.rgb;
-			
-		if( ((vpos.y - borderSize) % fractionWidth) < 1)
-			retVal = UIGridColor.rgb;	
+		retVal = DrawGrid(color, UIGridColor, userAspectRatio, GOLDEN_RATIO, vpos);
+		retVal = DrawGrid(retVal, UIGridColor, userAspectRatio, GOLDEN_RATIO, float4(BUFFER_WIDTH, BUFFER_HEIGHT, 0, 0) - vpos);
 	}
+
 
     return lerp(color, retVal, UIGridColor.w);
 }
 
 technique AspectRatioComposition
 {
-	pass {
+	pass
+	{
 		VertexShader = PostProcessVS;
 		PixelShader = AspectRatioComposition_PS;
 	}
