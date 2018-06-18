@@ -105,20 +105,6 @@ uniform float3 fUILineColor <
 	ui_label = "Line Color";
 > = float3(0.0, 0.0, 0.0);
 
-uniform int iUIColorTint <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_COLOR;
-	ui_label = "Tint";
-	ui_items = "Neutral\0Cyan\0Magenta\0Yellow\0";
-> = 0;
-
-uniform float fUIColorStrength <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_COLOR;
-	ui_label = "Strength";
-	ui_min = 0.0; ui_max = 1.0;
-> = 0.5;
-
 ////////////////////////// Debug //////////////////////////
 uniform int iUIDebugOverlayPosterizeLevels <
 	ui_type = "combo";
@@ -180,14 +166,9 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 
 	//Convert RGB to CMYK, set K to 0.0
 	float4 backbufferCMYK = Tools::Color::RGBtoCMYK(backbuffer);
-	backbufferCMYK.w = 0.0;
 
-	if(iUIColorTint == 1)
-		backbufferCMYK.xyz += float3(0.2, -0.1, -0.2);
-	else if(iUIColorTint == 2)
-		backbufferCMYK.xyz += float3(-0.1, 0.2, -0.1);
-	else if(iUIColorTint == 3)
-		backbufferCMYK.xyz += float3(-0.1, -0.1, 0.4);
+	backbufferCMYK.xyz += float3(0.2, -0.1, -0.2);
+	backbufferCMYK.w = 0.0;
 
 	mask = Tools::Color::CMYKtoRGB(saturate(backbufferCMYK));
 	
@@ -195,10 +176,7 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	image = chroma + lumaPoster;
 
 	//Blend with hard light
-	image = lerp(2*image*mask, 1.0 - 2.0 * (1.0 - image) * (1.0 - mask), step(0.5, luma.r));
-
-	//color strength
-	colorLayer = lerp(backbuffer, image, fUIColorStrength);
+	colorLayer = lerp(2*image*mask, 1.0 - 2.0 * (1.0 - image) * (1.0 - mask), step(0.5, luma.r));
 
 	/*******************************************************
 		Create PencilLayer
@@ -227,7 +205,6 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		outlinesDepthBuffer *= depthC;
 		
 	outlinesDepthBuffer *= fUIOutlinesStrength.rrr;
-
 
 	float3 lumaEdges = Tools::Functions::DiffEdges(ReShade::BackBuffer, texcoord).rrr * fUIDiffEdgesStrength;
 
