@@ -6,7 +6,6 @@
 #include "ReShade.fxh"
 
 #define GOLDEN_RATIO 1.6180339887
-#define INV_GOLDEN_RATIO  1.0 / 1.6180339887
 
 /******************************************************************************
 	Uniforms
