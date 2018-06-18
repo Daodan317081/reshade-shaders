@@ -15,7 +15,7 @@
 uniform float fUIAspectRatio <
 	ui_type = "drag";
 	ui_label = "Aspect Ratio";
-	ui_tooltip = "To control aspect ratio with an int2\nremove 'ASPECT_RATIO_FLOAT=1' from preprocessor\nor set it to '0'";
+	ui_tooltip = "To control aspect ratio with an int2\nremove 'ASPECT_RATIO_FLOAT' from preprocessor";
 	ui_min = 0.0; ui_max = 20.0;
 	ui_step = 0.01;
 > = 1.0;
@@ -23,7 +23,7 @@ uniform float fUIAspectRatio <
 uniform int2 iUIAspectRatio <
 	ui_type = "drag";
 	ui_label = "Aspect Ratio";
-	ui_tooltip = "To control aspect ratio with a float\nadd 'ASPECT_RATIO_FLOAT=1' to preprocessor";
+	ui_tooltip = "To control aspect ratio with a float\nadd 'ASPECT_RATIO_FLOAT' to preprocessor";
 	ui_min = 0; ui_max = 20;
 > = int2(16, 9);
 #endif
