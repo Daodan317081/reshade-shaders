@@ -7,6 +7,10 @@
 
 #define GOLDEN_RATIO 1.6180339887
 
+#ifndef ASPECT_RATIO_MAX
+	#define ASPECT_RATIO_MAX 20
+#endif
+
 /******************************************************************************
 	Uniforms
 ******************************************************************************/
@@ -23,8 +27,8 @@ uniform float fUIAspectRatio <
 uniform int2 iUIAspectRatio <
 	ui_type = "drag";
 	ui_label = "Aspect Ratio";
-	ui_tooltip = "To control aspect ratio with a float\nadd 'ASPECT_RATIO_FLOAT' to preprocessor";
-	ui_min = 0; ui_max = 20;
+	ui_tooltip = "To control aspect ratio with a float\nadd 'ASPECT_RATIO_FLOAT' to preprocessor.\nOptional: 'ASPECT_RATIO_MAX=xyz'";
+	ui_min = 0; ui_max = ASPECT_RATIO_MAX;
 > = int2(16, 9);
 #endif
 
