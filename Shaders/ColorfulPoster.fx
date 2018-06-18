@@ -199,12 +199,12 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	*******************************************************/
 	float3 mask, image, colorLayer;
 
-	//Convert RGB to CMYK, set K to 0.0
+	//Convert RGB to CMYK, add cyan tint, set K to 0.0
 	float4 backbufferCMYK = Tools::Color::RGBtoCMYK(backbuffer);
-
 	backbufferCMYK.xyz += float3(0.2, -0.1, -0.2);
 	backbufferCMYK.w = 0.0;
 
+	//Convert back to RGB
 	mask = Tools::Color::CMYKtoRGB(saturate(backbufferCMYK));
 	
 	//add chroma and posterized luma
