@@ -111,11 +111,11 @@ float3 AspectRatioComposition_PS(float4 vpos : SV_Position, float2 texcoord : Te
 #endif
 
 	if(iUIGridType == 0)
-		retVal = DrawGrid(color, UIGridColor, userAspectRatio, iUIGridFractions, vpos);
+		retVal = DrawGrid(color, UIGridColor.rgb, userAspectRatio, iUIGridFractions, vpos);
 	else
 	{
-		retVal = DrawGrid(color, UIGridColor, userAspectRatio, GOLDEN_RATIO, vpos);
-		retVal = DrawGrid(retVal, UIGridColor, userAspectRatio, GOLDEN_RATIO, float4(BUFFER_WIDTH, BUFFER_HEIGHT, 0, 0) - vpos);
+		retVal = DrawGrid(color, UIGridColor.rgb, userAspectRatio, GOLDEN_RATIO, vpos);
+		retVal = DrawGrid(retVal, UIGridColor.rgb, userAspectRatio, GOLDEN_RATIO, float4(BUFFER_WIDTH, BUFFER_HEIGHT, 0, 0) - vpos);
 	}
 
     return lerp(color, retVal, UIGridColor.w);
