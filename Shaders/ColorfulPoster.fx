@@ -90,13 +90,14 @@ uniform int iUILumaKernel <
 	ui_label = "Luma edge detection kernel";
 	ui_items = "Sobel\0Prewitt\0Scharr\0Sobel 2\0Diff-Edges\0";
 > = 4;
-
+/* Doesn't work in d3d9
 uniform int iUILumaEdgeMergeMethod <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_EDGES;
 	ui_label = "Luma edges merge method";
 	ui_items = "Multiplication\0Dotproduct\0X\0Y\0Addition\0Maximum\0";
 > = 5;
+*/
 #endif
 
 uniform float fUILumaEdgesStrength <
@@ -113,13 +114,14 @@ uniform int iUIChromaKernel <
 	ui_label = "Chroma edge detection kernel";
 	ui_items = "Sobel\0Prewitt\0Scharr\0Sobel 2\0Diff-Edges\0";
 > = 3;
-
+/* Doesn't work in d3d9
 uniform int iUIChromaEdgeMergeMethod <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_EDGES;
 	ui_label = "Chroma edges merge method";
 	ui_items = "Multiplication\0Dotproduct\0X\0Y\0Addition\0Maximum\0";
 > = 5;
+*/
 #endif
 
 uniform float fUIChromaEdgesStrength <
@@ -245,12 +247,12 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 
 #ifdef COLORFUL_POSTER_EXTENDED_CONTROLS
 	if(iUILumaKernel != 4)
-		lumaEdges = Tools::Convolution::Edges(SamplerColorfulPosterLuma, texcoord, iUILumaKernel, iUILumaEdgeMergeMethod).rrr * fUILumaEdgesStrength;
+		lumaEdges = Tools::Convolution::Edges(SamplerColorfulPosterLuma, texcoord, iUILumaKernel, CONV_MAX).rrr * fUILumaEdgesStrength;
 	else
 		lumaEdges = Tools::Functions::DiffEdges(SamplerColorfulPosterLuma, texcoord).rrr * fUILumaEdgesStrength;
 
 	if(iUIChromaKernel != 4)
-		chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, iUIChromaKernel, iUIChromaEdgeMergeMethod).rrr * fUIChromaEdgesStrength;
+		chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, iUIChromaKernel, CONV_MAX).rrr * fUIChromaEdgesStrength;
 	else
 		chromaEdges = Tools::Functions::DiffEdges(SamplerColorfulPosterChroma, texcoord).rrr * fUILumaEdgesStrength;
 #else
