@@ -100,11 +100,11 @@ float3 AspectRatioComposition_PS(float4 vpos : SV_Position, float2 texcoord : Te
 
 	float userAspectRatio;
 
-	#ifdef ASPECT_RATIO_FLOAT
+#ifdef ASPECT_RATIO_FLOAT
 	userAspectRatio = fUIAspectRatio;
-	#else
+#else
 	userAspectRatio = (float)iUIAspectRatio.x / (float)iUIAspectRatio.y;
-	#endif
+#endif
 
 	if(iUIGridType == 0)
 		retVal = DrawGrid(color, UIGridColor, userAspectRatio, iUIGridFractions, vpos);
@@ -113,7 +113,6 @@ float3 AspectRatioComposition_PS(float4 vpos : SV_Position, float2 texcoord : Te
 		retVal = DrawGrid(color, UIGridColor, userAspectRatio, GOLDEN_RATIO, vpos);
 		retVal = DrawGrid(retVal, UIGridColor, userAspectRatio, GOLDEN_RATIO, float4(BUFFER_WIDTH, BUFFER_HEIGHT, 0, 0) - vpos);
 	}
-
 
     return lerp(color, retVal, UIGridColor.w);
 }
