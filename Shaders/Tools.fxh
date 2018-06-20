@@ -119,12 +119,11 @@ namespace Tools {
         }
 
         float4 RGBtoCMYK(float3 color) {
-            float C, M, Y, K;
+            float3 CMY;
+            float K;
             K = 1.0 - max(color.r, max(color.g, color.b));
-            C = (1.0 - color.r - K) / (1.0 - K);
-            M = (1.0 - color.g - K) / (1.0 - K);
-            Y = (1.0 - color.b - K) / (1.0 - K);
-            return float4(C, M, Y, K);
+            CMY = (1.0 - color - K) / (1.0 - K);
+            return float4(CMY, K);
         }
 
         float3 CMYKtoRGB(float4 cmyk) {
