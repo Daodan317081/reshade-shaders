@@ -70,7 +70,7 @@ uniform float fUIOutlinesThreshold <
 uniform int iUIOutlinesFading <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_OUTLINES;
-	ui_label = "Distance Weight";
+	ui_label = "Fading";
 	ui_tooltip = "Outlines fade with increasing distance (or inverse)";
 	ui_items = "No\0Decrease\0Increase\0";
 > = 0;
