@@ -548,5 +548,30 @@ namespace Tools {
             float diffSWNE = abs(valSW - valNE);
             return saturate((diffNS + diffWE + diffNWSE + diffSWNE) * (1.0 - valC));
         }
+
+        float GetDepthBufferOutlines(float2 texcoord, int fading)
+        {
+            float depthC =  ReShade::GetLinearizedDepth(texcoord);
+            float depthN =  ReShade::GetLinearizedDepth(texcoord + float2(0.0, -ReShade::PixelSize.y));
+            float depthNE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, -ReShade::PixelSize.y));
+            float depthE =  ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, 0.0));
+            float depthSE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, ReShade::PixelSize.y));
+            float depthS =  ReShade::GetLinearizedDepth(texcoord + float2(0.0, ReShade::PixelSize.y));
+            float depthSW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, ReShade::PixelSize.y));
+            float depthW =  ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, 0.0));
+            float depthNW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, -ReShade::PixelSize.y));
+            float diffNS = abs(depthN - depthS);
+            float diffWE = abs(depthW - depthE);
+            float diffNWSE = abs(depthNW - depthSE);
+            float diffSWNE = abs(depthSW - depthNE);
+            float outline = (diffNS + diffWE + diffNWSE + diffSWNE);
+
+            if(fading == 1)
+                outline *= (1.0 - depthC);
+            else if(fading == 2)
+                outline *= depthC;
+
+            return outline;
+        }
     }
 }
