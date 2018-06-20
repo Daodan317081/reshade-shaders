@@ -83,46 +83,12 @@ uniform float fUIOutlinesStrength <
 > = 1.0;
 
 //Edge Detection
-#ifdef COLORFUL_POSTER_EXTENDED_CONTROLS
-uniform int iUILumaKernel <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_EDGES;
-	ui_label = "Luma edge detection kernel";
-	ui_items = "Sobel\0Prewitt\0Scharr\0Sobel 2\0Diff-Edges\0";
-> = 4;
-/* Doesn't work in d3d9
-uniform int iUILumaEdgeMergeMethod <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_EDGES;
-	ui_label = "Luma edges merge method";
-	ui_items = "Multiplication\0Dotproduct\0X\0Y\0Addition\0Maximum\0";
-> = 5;
-*/
-#endif
-
 uniform float fUILumaEdgesStrength <
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_EDGES;
 	ui_label = "Luma";
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
-
-#ifdef COLORFUL_POSTER_EXTENDED_CONTROLS
-uniform int iUIChromaKernel <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_EDGES;
-	ui_label = "Chroma edge detection kernel";
-	ui_items = "Sobel\0Prewitt\0Scharr\0Sobel 2\0Diff-Edges\0";
-> = 3;
-/* Doesn't work in d3d9
-uniform int iUIChromaEdgeMergeMethod <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_EDGES;
-	ui_label = "Chroma edges merge method";
-	ui_items = "Multiplication\0Dotproduct\0X\0Y\0Addition\0Maximum\0";
-> = 5;
-*/
-#endif
 
 uniform float fUIChromaEdgesStrength <
 	ui_type = "drag";
@@ -245,20 +211,8 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		
 	outlinesDepthBuffer *= fUIOutlinesStrength.rrr;
 
-#ifdef COLORFUL_POSTER_EXTENDED_CONTROLS
-	if(iUILumaKernel != 4)
-		lumaEdges = Tools::Convolution::Edges(SamplerColorfulPosterLuma, texcoord, iUILumaKernel, CONV_MAX).rrr * fUILumaEdgesStrength;
-	else
-		lumaEdges = Tools::Functions::DiffEdges(SamplerColorfulPosterLuma, texcoord).rrr * fUILumaEdgesStrength;
-
-	if(iUIChromaKernel != 4)
-		chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, iUIChromaKernel, CONV_MAX).rrr * fUIChromaEdgesStrength;
-	else
-		chromaEdges = Tools::Functions::DiffEdges(SamplerColorfulPosterChroma, texcoord).rrr * fUILumaEdgesStrength;
-#else
 	lumaEdges = Tools::Functions::DiffEdges(SamplerColorfulPosterLuma, texcoord).rrr * fUILumaEdgesStrength;
 	chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, CONV_SOBEL2, CONV_MAX).rrr * fUIChromaEdgesStrength;
-#endif
 
 	//Finalize pencil layer
 	pencilLayer = saturate(outlinesDepthBuffer + lumaEdges + chromaEdges);
