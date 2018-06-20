@@ -106,6 +106,7 @@ uniform float3 fUILineColor <
 > = float3(0.0, 0.0, 0.0);
 
 ////////////////////////// Debug //////////////////////////
+
 uniform int iUIDebugOverlayPosterizeLevels <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_DEBUG;
@@ -121,6 +122,7 @@ uniform int iUIDebugMaps <
 > = 0;
 
 ////////////////////////// Effect //////////////////////////
+
 uniform float fUIStrength <
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_EFFECT;
@@ -141,7 +143,7 @@ sampler2D SamplerColorfulPosterLuma { Texture = texColorfulPosterLuma; };
 	Pixel Shader
 ******************************************************************************/
 
-//Convolution gets currently done with samplers, so rendering chroma to a texture is necessary
+//Convolution gets currently done with samplers, so rendering to a texture is necessary
 void Chroma_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord, out float3 chroma : SV_Target0, out float3 luma : SV_Target1) {
 	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
 	luma = dot(color, LumaCoeff);
@@ -175,10 +177,10 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	//Convert back to RGB
 	mask = Tools::Color::CMYKtoRGB(saturate(backbufferCMYK));
 	
-	//add chroma and posterized luma
+	//add luma to chroma
 	image = chroma + lumaPoster;
 
-	//Blend with hard light
+	//Blend with 'hard light'
 	colorLayer = lerp(2*image*mask, 1.0 - 2.0 * (1.0 - image) * (1.0 - mask), step(0.5, luma.r));
 
 	/*******************************************************
