@@ -52,21 +52,6 @@ uniform float fUISlope <
 ////////////////////////// Pencil Layer //////////////////////////
 
 //Outlines
-uniform int iUIOutlinesEnableThreshold <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_OUTLINES;
-	ui_label = "Enable Threshold";
-	ui_items = "Off\0On\0";
-> = 0;
-
-uniform float fUIOutlinesThreshold <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_OUTLINES;
-	ui_label = "Threshold";
-	ui_min = 0.0; ui_max = 1.0;
-	ui_step = 0.001;
-> = 0.5;
-
 uniform int iUIOutlinesFading <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_OUTLINES;
