@@ -67,7 +67,7 @@ uniform float fUIOutlinesThreshold <
 	ui_step = 0.001;
 > = 0.5;
 
-uniform int iUIOutlinesFadeWithDistance <
+uniform int iUIOutlinesFading <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_OUTLINES;
 	ui_label = "Distance Weight";
@@ -184,38 +184,11 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	/*******************************************************
 		Create PencilLayer
 	*******************************************************/
-	float3 lumaEdges, chromaEdges, pencilLayer;
+	float3 outlinesDepthBuffer = Tools::Functions::GetDepthBufferOutlines(texcoord, iUIOutlinesFading) * fUIOutlinesStrength.rrr;
+	float3 lumaEdges = Tools::Functions::DiffEdges(SamplerColorfulPosterLuma, texcoord).rrr * fUILumaEdgesStrength;
+	float3 chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, CONV_SOBEL2, CONV_MAX).rrr * fUIChromaEdgesStrength;
 
-	float depthC =  ReShade::GetLinearizedDepth(texcoord);
-	float depthN =  ReShade::GetLinearizedDepth(texcoord + float2(0.0, -ReShade::PixelSize.y));
-	float depthNE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, -ReShade::PixelSize.y));
-	float depthE =  ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, 0.0));
-	float depthSE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, ReShade::PixelSize.y));
-	float depthS =  ReShade::GetLinearizedDepth(texcoord + float2(0.0, ReShade::PixelSize.y));
-	float depthSW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, ReShade::PixelSize.y));
-	float depthW =  ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, 0.0));
-	float depthNW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, -ReShade::PixelSize.y));
-	float diffNS = abs(depthN - depthS);
-	float diffWE = abs(depthW - depthE);
-	float diffNWSE = abs(depthNW - depthSE);
-	float diffSWNE = abs(depthSW - depthNE);
-	float3 outlinesDepthBuffer = (diffNS + diffWE + diffNWSE + diffSWNE);
-
-	if(iUIOutlinesEnableThreshold == 1)
-		outlinesDepthBuffer = outlinesDepthBuffer < fUIOutlinesThreshold ? 0.0 : 1.0;
-
-	if(iUIOutlinesFadeWithDistance == 1)
-		outlinesDepthBuffer *= (1.0 - depthC);
-	else if(iUIOutlinesFadeWithDistance == 2)
-		outlinesDepthBuffer *= depthC;
-		
-	outlinesDepthBuffer *= fUIOutlinesStrength.rrr;
-
-	lumaEdges = Tools::Functions::DiffEdges(SamplerColorfulPosterLuma, texcoord).rrr * fUILumaEdgesStrength;
-	chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, CONV_SOBEL2, CONV_MAX).rrr * fUIChromaEdgesStrength;
-
-	//Finalize pencil layer
-	pencilLayer = saturate(outlinesDepthBuffer + lumaEdges + chromaEdges);
+	float3 pencilLayer = saturate(outlinesDepthBuffer + lumaEdges + chromaEdges);
 
 	/*******************************************************
 		Create result
