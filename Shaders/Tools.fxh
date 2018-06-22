@@ -260,6 +260,7 @@ namespace Tools {
 
     namespace Convolution {
 
+        //TODO: Change texcoord with vpos
         float3 ThreeByThree(sampler s, float2 texcoord, float kernel[9], float divisor) {
             float x, y, px, py;
             float3 acc;
@@ -273,7 +274,8 @@ namespace Tools {
             for(int m = 0; m < 3; m++) {
                 [loop]
                 for(int n = 0; n < 3; n++) {
-                    acc += kernel[n + (m*3)] * tex2D(s, float2(x + n * px, y + m * py)).rgb;
+                    //acc += kernel[n + (m*3)] * tex2D(s, float2(x + n * px, y + m * py)).rgb;
+                    acc += kernel[n + (m*3)] * tex2Dfetch(s, int4( (x + n * px) * BUFFER_WIDTH, (y + m * py) * BUFFER_HEIGHT, 0, 0)).rgb;
                 }
             }
 
@@ -293,7 +295,8 @@ namespace Tools {
             for(int m = 0; m < 5; m++) {
                 [loop]
                 for(int n = 0; n < 5; n++) {
-                    acc += kernel[n + (m*5)] * tex2D(s, float2(x + n * px, y + m * py)).rgb;
+                    //acc += kernel[n + (m*5)] * tex2D(s, float2(x + n * px, y + m * py)).rgb;
+                    acc += kernel[n + (m*5)] * tex2Dfetch(s, int4( (x + n * px) * BUFFER_WIDTH, (y + m * py) * BUFFER_HEIGHT, 0, 0)).rgb;
                 }
             }
 
@@ -313,7 +316,8 @@ namespace Tools {
             for(int m = 0; m < 9; m++) {
                 [loop]
                 for(int n = 0; n < 9; n++) {
-                    acc += kernel[n + (m*9)] * tex2D(s, float2(x + n * px, y + m * py)).rgb;
+                    //acc += kernel[n + (m*9)] * tex2D(s, float2(x + n * px, y + m * py)).rgb;
+                    acc += kernel[n + (m*9)] * tex2Dfetch(s, int4( (x + n * px) * BUFFER_WIDTH, (y + m * py) * BUFFER_HEIGHT, 0, 0)).rgb;
                 }
             }
 
