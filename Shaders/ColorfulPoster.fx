@@ -84,6 +84,13 @@ uniform float fUIChromaEdgesStrength <
 
 ////////////////////////// Color //////////////////////////
 
+uniform float fUITint <
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_COLOR;
+	ui_label = "Tint Strength";
+	ui_min = 0.0; ui_max = 1.0;
+> = 1.0;
+
 uniform float3 fUILineColor <
 	ui_type = "color";
 	ui_category = UI_CATEGORY_COLOR;
@@ -167,6 +174,7 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 
 	//Blend with 'hard light'
 	colorLayer = lerp(2*image*mask, 1.0 - 2.0 * (1.0 - image) * (1.0 - mask), step(0.5, luma.r));
+	colorLayer = lerp(image, colorLayer, fUITint);
 
 	/*******************************************************
 		Create PencilLayer
