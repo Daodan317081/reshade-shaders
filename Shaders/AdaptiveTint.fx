@@ -84,7 +84,7 @@ uniform int iUIDebug <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_DEBUG;
 	ui_label = "Show Tint Layer";
-	ui_items = "Off\0Tint\0";
+	ui_items = "Off\0Tint\0Factor\0";
 > = 0;
 
 uniform float fUIDebugLineWidth <
@@ -178,8 +178,10 @@ float3 AdaptiveTint_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : 
 	/*******************************************************
 		Debug
 	*******************************************************/
-	if(iUIDebug == 1) //factor
+	if(iUIDebug == 1) //tint
 		return lerp(tint, tex2D(SamplerAlphaCheckerboard, texcoord).rgb, factor);
+	if(iUIDebug == 2) //factor
+		return lerp(BLACK, WHITE, factor);
 
 	return lerp(backbuffer, result, fUIStrength);
 }
