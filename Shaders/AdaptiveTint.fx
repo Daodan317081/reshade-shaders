@@ -211,23 +211,23 @@ void Show_Stats_PS(float4 position : SV_Position, float2 texcoord : TEXCOORD, ou
 	float3 warm = Tools::Color::YIQtoRGB(float3(0.5, YIQ_I_RANGE.y, 0.0));
 	float3 cold = Tools::Color::YIQtoRGB(float3(0.5, YIQ_I_RANGE.x, 0.0));
 
-	sctpoint scaleTemp			= Tools::Draw::NewPoint(lerp(cold, warm, texcoord.y / (1.0 - margin.y)), offset,
+	sctpoint scaleTemp			= Tools::Types::Point(lerp(cold, warm, texcoord.y / (1.0 - margin.y)), offset,
 														float2(texcoord.x < margin.x ? texcoord.x : -1,	texcoord.y < 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerTemp 		= Tools::Draw::NewPoint(BLACK, offset,
+	sctpoint markerTemp 		= Tools::Types::Point(BLACK, offset,
 														float2(texcoord.x < margin.x ? texcoord.x : -1,	GetColorTemp(texcoord)));
-	sctpoint scaleAvgColor 		= Tools::Draw::NewPoint(avgColor, offset,
+	sctpoint scaleAvgColor 		= Tools::Types::Point(avgColor, offset,
 														float2(texcoord.x < margin.x ? texcoord.x : -1,	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint scaleLuma 			= Tools::Draw::NewPoint(lerp(1.0, 0.0, (1.0 - texcoord.x) / (1.0 - margin.x)).rrr,	offset,
+	sctpoint scaleLuma 			= Tools::Types::Point(lerp(1.0, 0.0, (1.0 - texcoord.x) / (1.0 - margin.x)).rrr,	offset,
 														float2(texcoord.x > margin.x ? texcoord.x : -1,	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerAvgLuma 		= Tools::Draw::NewPoint(MAGENTA, offset,
+	sctpoint markerAvgLuma 		= Tools::Types::Point(MAGENTA, offset,
 														float2((avgLuma + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerLevelWhite 	= Tools::Draw::NewPoint(RED, offset,
+	sctpoint markerLevelWhite 	= Tools::Types::Point(RED, offset,
 														float2((levels.y + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerLevelBlack 	= Tools::Draw::NewPoint(CYAN, offset,
+	sctpoint markerLevelBlack 	= Tools::Types::Point(CYAN, offset,
 														float2((levels.x + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint curveWhite 		= Tools::Draw::NewPoint(RED, offset,
+	sctpoint curveWhite 		= Tools::Types::Point(RED, offset,
 														float2(texcoord.x, 1.0 - curves.y));
-	sctpoint curveBlack 		= Tools::Draw::NewPoint(CYAN, offset,
+	sctpoint curveBlack 		= Tools::Types::Point(CYAN, offset,
 														float2(texcoord.x, 1.0 - curves.x));
 
 	result = Tools::Draw::Point(BLACK,	background,			texcoord);

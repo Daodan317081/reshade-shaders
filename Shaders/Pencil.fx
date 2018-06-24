@@ -119,33 +119,9 @@ float3 Pencil_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Tar
 	/*******************************************************
 		Create PencilLayer
 	*******************************************************/
-	float depthC =  ReShade::GetLinearizedDepth(texcoord);
-	float depthN =  ReShade::GetLinearizedDepth(texcoord + float2(0.0, -ReShade::PixelSize.y));
-	float depthNE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, -ReShade::PixelSize.y));
-	float depthE =  ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, 0.0));
-	float depthSE = ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, ReShade::PixelSize.y));
-	float depthS =  ReShade::GetLinearizedDepth(texcoord + float2(0.0, ReShade::PixelSize.y));
-	float depthSW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, ReShade::PixelSize.y));
-	float depthW =  ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, 0.0));
-	float depthNW = ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, -ReShade::PixelSize.y));
-	float diffNS = abs(depthN - depthS);
-	float diffWE = abs(depthW - depthE);
-	float diffNWSE = abs(depthNW - depthSE);
-	float diffSWNE = abs(depthSW - depthNE);
-	float outlinesDepthBuffer = (diffNS + diffWE + diffNWSE + diffSWNE);
-
-	if(iUIOutlinesEnableThreshold == 1)
-		outlinesDepthBuffer = outlinesDepthBuffer < fUIOutlinesThreshold ? 0.0 : 1.0;
-
-	if(iUIOutlinesFadeWithDistance == 1)
-		outlinesDepthBuffer *= (1.0 - depthC);
-	else if(iUIOutlinesFadeWithDistance == 2)
-		outlinesDepthBuffer *= depthC;
-		
-	outlinesDepthBuffer *= fUIOutlinesStrength;
-
+	float outlinesDepthBuffer = Tools::Functions::GetDepthBufferOutlines(texcoord, iUIOutlinesFadeWithDistance) * fUIOutlinesStrength;
 	float lumaEdges = Tools::Functions::DiffEdges(ReShade::BackBuffer, texcoord) * fUIDiffEdgesStrength;
-	float chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, CONV_SOBEL2, CONV_MAX).r * fUIConvStrength;
+	float chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, vpos.xy, CONV_SOBEL_FULL, CONV_MAX).r * fUIConvStrength;
 
 	//Finalize pencil layer
 	float pencilLayer = saturate(outlinesDepthBuffer + lumaEdges + chromaEdges);

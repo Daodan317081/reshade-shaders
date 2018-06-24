@@ -92,11 +92,11 @@ void Create_Stats_Image_PS(float4 position : SV_Position, float2 texcoord : TEXC
     float3 avgColor = tex2Dfetch(shared_SamplerStatsAvgColor, int4(0, 0, 0, 0)).rgb;
     float3 tmpScale = lerp(cold, warm, texcoord.x);
 
-	sctpoint scaleLuma = Tools::Draw::NewPoint(texcoord.x, offset, float2(texcoord.x, texcoord.y < 0.5 ? texcoord.y : -1));
-    sctpoint markerAvgLuma = Tools::Draw::NewPoint(MAGENTA, offset, float2(avgLuma, texcoord.y < 0.5 ? texcoord.y : -1));
+	sctpoint scaleLuma = Tools::Types::Point(texcoord.x, offset, float2(texcoord.x, texcoord.y < 0.5 ? texcoord.y : -1));
+    sctpoint markerAvgLuma = Tools::Types::Point(MAGENTA, offset, float2(avgLuma, texcoord.y < 0.5 ? texcoord.y : -1));
 
-    sctpoint scaleColorTemp = Tools::Draw::NewPoint(tmpScale, offset, float2(texcoord.x, texcoord.y > 0.5 ? texcoord.y : -1));
-    sctpoint markerAvgColorTemp = Tools::Draw::NewPoint(BLACK, offset, float2(avgColorTemp, texcoord.y > 0.5 ? texcoord.y : -1));
+    sctpoint scaleColorTemp = Tools::Types::Point(tmpScale, offset, float2(texcoord.x, texcoord.y > 0.5 ? texcoord.y : -1));
+    sctpoint markerAvgColorTemp = Tools::Types::Point(BLACK, offset, float2(avgColorTemp, texcoord.y > 0.5 ? texcoord.y : -1));
     
     result = Tools::Draw::Point(MAGENTA, scaleLuma, texcoord);
     result = Tools::Draw::Point(result, markerAvgLuma, texcoord);

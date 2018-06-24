@@ -181,7 +181,7 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	*******************************************************/
 	float3 outlinesDepthBuffer = Tools::Functions::GetDepthBufferOutlines(texcoord, iUIOutlinesFading) * fUIOutlinesStrength.rrr;
 	float3 lumaEdges = Tools::Functions::DiffEdges(SamplerColorfulPosterLuma, texcoord).rrr * fUILumaEdgesStrength;
-	float3 chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, texcoord, CONV_SOBEL2, CONV_MAX).rrr * fUIChromaEdgesStrength;
+	float3 chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, vpos.xy, CONV_SOBEL_FULL, CONV_MAX).rrr * fUIChromaEdgesStrength;
 
 	float3 pencilLayer = saturate(outlinesDepthBuffer + lumaEdges + chromaEdges);
 
@@ -207,7 +207,7 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		return ReShade::GetLinearizedDepth(texcoord).rrr;
 
 	if(iUIDebugOverlayPosterizeLevels == 1) {
-		sctpoint curveStep = Tools::Draw::NewPoint(MAGENTA, 1.0, float2(texcoord.x, 1.0 - Tools::Functions::Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)));
+		sctpoint curveStep = Tools::Types::Point(MAGENTA, 1.0, float2(texcoord.x, 1.0 - Tools::Functions::Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)));
 		result = Tools::Draw::Point(result, curveStep, texcoord);
 		backbuffer = Tools::Draw::Point(backbuffer, curveStep, texcoord);
 	}

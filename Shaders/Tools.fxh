@@ -50,14 +50,15 @@ uniform int iUILayerMode <
 uniform int iUIEdgeType <
 	ui_type = "combo";
 	ui_label = "Edge detection kernel";
-	ui_items = "CONV_SOBEL\0CONV_PREWITT\0CONV_SCHARR\0CONV_SOBEL2\0";
+	ui_items = "CONV_PREWITT\0CONV_PREWITT_FULL\0CONV_SOBEL\0CONV_SOBEL_FULL\0CONV_SCHARR\0CONV_SCHARR_FULL\0";
 > = 0;
 */
-#define CONV_SOBEL 0
-#define CONV_PREWITT 1
-#define CONV_SCHARR 2
-#define CONV_SOBEL2 3
-#define CONV_DIFFS 4
+#define CONV_PREWITT 0
+#define CONV_PREWITT_FULL 1
+#define CONV_SOBEL 2
+#define CONV_SOBEL_FULL 3
+#define CONV_SCHARR 4
+#define CONV_SCHARR_FULL 5
 
 /*
 uniform int iUIEdgeMergeMethod <
@@ -72,7 +73,6 @@ uniform int iUIEdgeMergeMethod <
 #define CONV_Y   3
 #define CONV_ADD 4
 #define CONV_MAX 5
-
 
 struct sctpoint {
     float3 color;
@@ -101,6 +101,18 @@ float3 ConvReturn(float3 X, float3 Y, int MulDotXYAddMax) {
 
 
 namespace Tools {
+
+    namespace Types {
+        
+        sctpoint Point(float3 color, float2 offset, float2 coord) {
+            sctpoint p;
+            p.color = color;
+            p.offset = offset;
+            p.coord = coord;
+            return p;
+        }
+
+    }
 
     namespace Color {
 
@@ -260,212 +272,132 @@ namespace Tools {
 
     namespace Convolution {
 
-        //TODO: Change texcoord with vpos
-        float3 ThreeByThree(sampler s, float2 texcoord, float kernel[9], float divisor) {
-            float x, y, px, py;
+        float3 ThreeByThree(sampler s, int2 vpos, float kernel[9], float divisor) {
             float3 acc;
 
-            px = ReShade::PixelSize.x;
-            py = ReShade::PixelSize.y;
-            x = texcoord.x - px;
-            y = texcoord.y - py;
-
-            [loop]
+            [unroll]
             for(int m = 0; m < 3; m++) {
-                [loop]
+                [unroll]
                 for(int n = 0; n < 3; n++) {
-                    //acc += kernel[n + (m*3)] * tex2D(s, float2(x + n * px, y + m * py)).rgb;
-                    acc += kernel[n + (m*3)] * tex2Dfetch(s, int4( (x + n * px) * BUFFER_WIDTH, (y + m * py) * BUFFER_HEIGHT, 0, 0)).rgb;
+                    acc += kernel[n + (m*3)] * tex2Dfetch(s, int4( (vpos.x - 1 + n), (vpos.y - 1 + m), 0, 0)).rgb;
                 }
             }
 
             return acc / divisor;
         }
 
-        float3 FiveByFive(sampler s, float2 texcoord, float kernel[25], float divisor) {
-            float x, y, px, py;
-            float3 acc = 0.0;
+        float3 ConvReturn(float3 X, float3 Y, int MulDotXYAddMax) {
+            float3 ret = float3(1.0, 0.0, 1.0);
 
-            px = ReShade::PixelSize.x;
-            py = ReShade::PixelSize.y;
-            x = texcoord.x - 2 * px;
-            y = texcoord.y - 2 * py;
-
-            [loop]
-            for(int m = 0; m < 5; m++) {
-                [loop]
-                for(int n = 0; n < 5; n++) {
-                    //acc += kernel[n + (m*5)] * tex2D(s, float2(x + n * px, y + m * py)).rgb;
-                    acc += kernel[n + (m*5)] * tex2Dfetch(s, int4( (x + n * px) * BUFFER_WIDTH, (y + m * py) * BUFFER_HEIGHT, 0, 0)).rgb;
-                }
-            }
-
-            return acc / divisor;
+            if(MulDotXYAddMax == CONV_MUL)
+                ret = X * Y;
+            else if(MulDotXYAddMax == CONV_DOT)
+                ret = dot(X,Y);
+            else if(MulDotXYAddMax == CONV_X)
+                ret = X;
+            else if(MulDotXYAddMax == CONV_Y)
+                ret = Y;
+            else if(MulDotXYAddMax == CONV_ADD)
+                ret = X + Y;
+            else if(MulDotXYAddMax == CONV_MAX)
+                ret = max(X, Y);
+            return saturate(ret);
         }
 
-        float3 NineByNine(sampler s, float2 texcoord, float kernel[81], float divisor) {
-            float x, y, px, py;
-            float3 acc = 0.0;
-
-            px = ReShade::PixelSize.x;
-            py = ReShade::PixelSize.y;
-            x = texcoord.x - 4 * px;
-            y = texcoord.y - 4 * py;
-
-            [loop]
-            for(int m = 0; m < 9; m++) {
-                [loop]
-                for(int n = 0; n < 9; n++) {
-                    //acc += kernel[n + (m*9)] * tex2D(s, float2(x + n * px, y + m * py)).rgb;
-                    acc += kernel[n + (m*9)] * tex2Dfetch(s, int4( (x + n * px) * BUFFER_WIDTH, (y + m * py) * BUFFER_HEIGHT, 0, 0)).rgb;
-                }
-            }
-
-            return acc / divisor;
-        }
-
-        float3 Prewitt(sampler s, float2 texcoord, int type) {
+        float3 Edges(sampler s, int2 vpos, int kernel, int type) {
             static const float Prewitt_X[9] = { -1.0,  0.0, 1.0,
                                                 -1.0,  0.0, 1.0,
                                                 -1.0,  0.0, 1.0	 };
 
             static const float Prewitt_Y[9] = { 1.0,  1.0,  1.0,
                                                 0.0,  0.0,  0.0,
-                                               -1.0, -1.0, -1.0  };
-            
-            float3 retValX = Convolution::ThreeByThree(s, texcoord, Prewitt_X, 1.0);
-            float3 retValY = Convolution::ThreeByThree(s, texcoord, Prewitt_Y, 1.0);
+                                                -1.0, -1.0, -1.0  };
 
-            return ConvReturn(retValX, retValY, type);
-        }
+            static const float Prewitt_X_M[9] = { 1.0,  0.0, -1.0,
+                                                1.0,  0.0, -1.0,
+                                                1.0,  0.0, -1.0	 };
 
-        float3 Sobel(sampler s, float2 texcoord, int type) {
+            static const float Prewitt_Y_M[9] = { -1.0,  -1.0,  -1.0,
+                                                0.0,  0.0,  0.0,
+                                                1.0, 1.0, 1.0  };
+
             static const float Sobel_X[9] = { 	1.0,  0.0, -1.0,
                                                 2.0,  0.0, -2.0,
                                                 1.0,  0.0, -1.0	 };
 
             static const float Sobel_Y[9] = { 	1.0,  2.0,  1.0,
                                                 0.0,  0.0,  0.0,
-                                               -1.0, -2.0, -1.0	 };
-            
-            float3 retValX = Convolution::ThreeByThree(s, texcoord, Sobel_X, 1.0);
-            float3 retValY = Convolution::ThreeByThree(s, texcoord, Sobel_Y, 1.0);
+                                            -1.0, -2.0, -1.0	 };
 
-            return ConvReturn(retValX, retValY, type);
-        }
+            static const float Sobel_X_M[9] = { 	-1.0,  0.0, 1.0,
+                                                    -2.0,  0.0, 2.0,
+                                                    -1.0,  0.0, 1.0	 };
 
-        float3 SobelINV(sampler s, float2 texcoord, int type) {
-            static const float Sobel_X[9] = { 	-1.0,  0.0, 1.0,
-                                                -2.0,  0.0, 2.0,
-                                                -1.0,  0.0, 1.0	 };
+            static const float Sobel_Y_M[9] = {   -1.0, -2.0, -1.0,
+                                                0.0,  0.0,  0.0,
+                                                1.0,  2.0,  1.0	 };
 
-            static const float Sobel_Y[9] = { -1.0, -2.0,  -1.0,
-                                               0.0, 0.0,  0.0,
-                                               1.0, 2.0, 1.0	 };
-            
-            float3 retValX = Convolution::ThreeByThree(s, texcoord, Sobel_X, 1.0);
-            float3 retValY = Convolution::ThreeByThree(s, texcoord, Sobel_Y, 1.0);
-
-            return ConvReturn(retValX, retValY, type);
-        }
-
-        float3 Scharr(sampler s, float2 texcoord, int type) {
             static const float Scharr_X[9] = { 	 3.0,  0.0,  -3.0,
                                                 10.0,  0.0, -10.0,
-                                                 3.0,  0.0,  -3.0  };
+                                                3.0,  0.0,  -3.0  };
 
             static const float Scharr_Y[9] = { 	3.0,  10.0,   3.0,
                                                 0.0,   0.0,   0.0,
-                                               -3.0, -10.0,  -3.0  };
+                                                -3.0, -10.0,  -3.0  };
+
+            static const float Scharr_X_M[9] = { 	 -3.0,  0.0,  3.0,
+                                                -10.0,  0.0, 10.0,
+                                                -3.0,  0.0,  3.0  };
+
+            static const float Scharr_Y_M[9] = { 	-3.0,  -10.0,   -3.0,
+                                                0.0,   0.0,   0.0,
+                                                3.0, 10.0,  3.0  };
             
-            float3 retValX = Convolution::ThreeByThree(s, texcoord, Scharr_X, 1.0);
-            float3 retValY = Convolution::ThreeByThree(s, texcoord, Scharr_Y, 1.0);
+            float3 retValX, retValXM;
+            float3 retValY, retValYM;
 
-            return ConvReturn(retValX, retValY, type);
-        }
-
-        float3 Edges(sampler s, float2 texcoord, int type, int ret) {
-            if(type == CONV_SOBEL)
-                return Convolution::Sobel(s, texcoord, ret);
-            else if(type == CONV_PREWITT)
-                return Convolution::Prewitt(s, texcoord, ret);
-            else if(type == CONV_SCHARR)
-                return Convolution::Scharr(s, texcoord, ret);
-            else if(type == CONV_SOBEL2) {
-                float3 sobel1 = Convolution::Sobel(s, texcoord, ret);
-                float3 sobel2 = Convolution::SobelINV(s, texcoord, ret);
-                return ConvReturn(sobel1, sobel2, ret);
+            if(kernel == CONV_PREWITT) {
+                retValX = Convolution::ThreeByThree(s, vpos, Prewitt_X, 1.0);
+                retValY = Convolution::ThreeByThree(s, vpos, Prewitt_Y, 1.0);
             }
-            else
-                return float3(1.0, 0.0, 1.0);
+            if(kernel == CONV_PREWITT_FULL) {
+                retValX = Convolution::ThreeByThree(s, vpos, Prewitt_X, 1.0);
+                retValY = Convolution::ThreeByThree(s, vpos, Prewitt_Y, 1.0);
+                retValXM = Convolution::ThreeByThree(s, vpos, Prewitt_X_M, 1.0);
+                retValYM = Convolution::ThreeByThree(s, vpos, Prewitt_Y_M, 1.0);
+                retValX = max(retValX, retValXM);
+                retValY = max(retValY, retValYM);
+            }
+            if(kernel == CONV_SOBEL) {
+                retValX = Convolution::ThreeByThree(s, vpos, Sobel_X, 1.0);
+                retValY = Convolution::ThreeByThree(s, vpos, Sobel_Y, 1.0);
+            }
+            if(kernel == CONV_SOBEL_FULL) {
+                retValX = Convolution::ThreeByThree(s, vpos, Sobel_X, 1.0);
+                retValY = Convolution::ThreeByThree(s, vpos, Sobel_Y, 1.0);
+                retValXM = Convolution::ThreeByThree(s, vpos, Sobel_X_M, 1.0);
+                retValYM = Convolution::ThreeByThree(s, vpos, Sobel_Y_M, 1.0);
+                retValX = max(retValX, retValXM);
+                retValY = max(retValY, retValYM);
+            }
+            if(kernel == CONV_SCHARR) {
+                retValX = Convolution::ThreeByThree(s, vpos, Scharr_X, 1.0);
+                retValY = Convolution::ThreeByThree(s, vpos, Scharr_Y, 1.0);
+            }
+            if(kernel == CONV_SCHARR_FULL) {
+                retValX = Convolution::ThreeByThree(s, vpos, Scharr_X, 1.0);
+                retValY = Convolution::ThreeByThree(s, vpos, Scharr_Y, 1.0);
+                retValXM = Convolution::ThreeByThree(s, vpos, Scharr_X_M, 1.0);
+                retValYM = Convolution::ThreeByThree(s, vpos, Scharr_Y_M, 1.0);
+                retValX = max(retValX, retValXM);
+                retValY = max(retValY, retValYM);
+            }
+
+            return Convolution::ConvReturn(retValX, retValY, type);
         }
-
-        float3 Blur3x3(sampler s, float2 texcoord) {
-            static const float kernel[9] = { 1.0,  1.0, 1.0,
-                                             1.0,  1.0, 1.0,
-                                             1.0,  1.0, 1.0  };
-            
-
-            return Convolution::ThreeByThree(s, texcoord, kernel, 9.0);
-        }
-
-        float3 BlurGauss3x3(sampler s, float2 texcoord) {
-            static const float kernel[9] = { 1.0,  2.0, 1.0,
-                                             2.0,  4.0, 2.0,
-                                             1.0,  2.0, 1.0	 };
-            
-
-            return Convolution::ThreeByThree(s, texcoord, kernel, 16.0);
-        }
-
-        float3 Blur5x5(sampler s, float2 texcoord) {
-            static const float kernel[25] = { 1.0, 1.0, 1.0, 1.0, 1.0,
-                                              1.0, 1.0, 1.0, 1.0, 1.0,
-                                              1.0, 1.0, 1.0, 1.0, 1.0,
-                                              1.0, 1.0, 1.0, 1.0, 1.0,
-                                              1.0, 1.0, 1.0, 1.0, 1.0 };
-            
-
-            return Convolution::FiveByFive(s, texcoord, kernel, 25.0);
-        }
-
-        float3 BlurGauss5x5(sampler s, float2 texcoord) {
-            static const float kernel[25] = {   0.0030,    0.0133,    0.0219,    0.0133,    0.0030,
-                                                0.0133,    0.0596,    0.0983,    0.0596,    0.0133,
-                                                0.0219,    0.0983,    0.1621,    0.0983,    0.0219,
-                                                0.0133,    0.0596,    0.0983,    0.0596,    0.0133,
-                                                0.0030,    0.0133,    0.0219,    0.0133,    0.0030 };
-            
-
-            return Convolution::FiveByFive(s, texcoord, kernel, 1.0);
-        }
-
-        float3 BlurGauss9x9(sampler s, float2 texcoord) {
-            static const float kernel[81] = {   0,	        0.000001,	0.000014,	0.000055,	0.000088,	0.000055,	0.000014,	0.000001,	0,
-                                                0.000001,	0.000036,	0.000362,	0.001445,	0.002289,	0.001445,	0.000362,	0.000036,	0.000001,
-                                                0.000014,	0.000362,	0.003672,	0.014648,	0.023205,	0.014648,	0.003672,	0.000362,	0.000014,
-                                                0.000055,	0.001445,	0.014648,	0.058434,	0.092566,	0.058434,	0.014648,	0.001445,	0.000055,
-                                                0.000088,	0.002289,	0.023205,	0.092566,	0.146634,	0.092566,	0.023205,	0.002289,	0.000088,
-                                                0.000055,	0.001445,	0.014648,	0.058434,	0.092566,	0.058434,	0.014648,	0.001445,	0.000055,
-                                                0.000014,	0.000362,	0.003672,	0.014648,	0.023205,	0.014648,	0.003672,	0.000362,	0.000014,
-                                                0.000001,	0.000036,	0.000362,	0.001445,	0.002289,	0.001445,	0.000362,	0.000036,	0.000001,
-                                                0,	        0.000001,	0.000014,	0.000055,	0.000088,	0.000055,	0.000014,	0.000001,	0 };
-            
-
-            return Convolution::NineByNine(s, texcoord, kernel, 1.0);
-        }
-
     }
 
     namespace Draw {
-
-        sctpoint NewPoint(float3 color, float2 offset, float2 coord) {
-            sctpoint p;
-            p.color = color;
-            p.offset = offset;
-            p.coord = coord;
-            return p;
-        }
 
         float3 Point(float3 texcolor, sctpoint p, float2 texcoord) {
             float2 pixelsize = ReShade::PixelSize * p.offset;
