@@ -3,15 +3,15 @@
 
 #ifndef OVERLAY_NAME
 	#define OVERLAY_NAME "neutral_lut.png"
-
-	#ifndef OVERLAY_WIDTH
-		#define OVERLAY_WIDTH 1024
-	#endif
-	#ifndef OVERLAY_HEIGHT
-		#define OVERLAY_HEIGHT 32
-	#endif
-
 #endif
+
+#ifndef OVERLAY_WIDTH
+	#error "OVERLAY_WIDTH not defined"
+#endif
+#ifndef OVERLAY_HEIGHT
+	#error "OVERLAY_HEIGHT not defined"
+#endif
+
 
 uniform int2 i2UIOverlayPos <
 	ui_type = "drag";
@@ -35,7 +35,7 @@ float3 DrawOverlayPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV
 
 	float3 col = tex2D(ReShade::BackBuffer, texcoord).rgb;
 	
-	col = Tools::Draw::OverlaySampler(col, samplerOverlay, 1.0, texcoord, int2(0, 0), 1.0);
+	col = Tools::Draw::OverlaySampler(col, samplerOverlay, 1.0, texcoord, i2UIOverlayPos, 1.0);
 
 	return col;
 }
