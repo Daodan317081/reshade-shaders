@@ -13,6 +13,8 @@
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
 
+
+
 /******************************************************************************
 	Uniforms
 ******************************************************************************/
@@ -207,8 +209,8 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 
 	if(iUIDebugOverlayPosterizeLevels == 1) {
 		sctpoint curveStep = Tools::Types::Point(MAGENTA, 1.0, float2(texcoord.x, 1.0 - Tools::Functions::Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)));
-		result = Tools::Draw::Point(result, curveStep, texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
-		backbuffer = Tools::Draw::Point(backbuffer, curveStep, texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+		result = Tools::Draw::Point(result, curveStep, texcoord, BUFFER_WIDTH * 0.66);
+		backbuffer = Tools::Draw::Point(backbuffer, curveStep, texcoord, BUFFER_WIDTH * 0.66);
 	}
 
 	/*******************************************************
