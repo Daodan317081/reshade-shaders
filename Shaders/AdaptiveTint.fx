@@ -23,7 +23,7 @@ uniform int iUIWhiteLevelFormula <
 	ui_label = "White Level Curve (red)";
 	ui_tooltip = UI_TOOLTIP_DEBUG;
 	ui_items = "Linear: x * (value - y) + z\0Square: x * (value - y)^2 + z\0Cube: x * (value - y)^2 + z\0";
-> = 0;
+> = 1;
 
 uniform float3 f3UICurveWhiteParam <
 	ui_type = "drag";
@@ -32,7 +32,7 @@ uniform float3 f3UICurveWhiteParam <
 	ui_tooltip = UI_TOOLTIP_DEBUG;
 	ui_min = -10.0; ui_max = 10.0;
 	ui_step = 0.01;
-> = float3(1.0, 0.0, 0.0);
+> = float3(-0.5, 1.0, 1.0);
 
 uniform int iUIBlackLevelFormula <
 	ui_type = "combo";
@@ -40,7 +40,7 @@ uniform int iUIBlackLevelFormula <
 	ui_label = "Black Level Curve (cyan)";
 	ui_tooltip = UI_TOOLTIP_DEBUG;
 	ui_items = "Linear: x * (value - y) + z\0Square: x * (value - y)^2 + z\0Cube: x * (value - y)^3 + z\0";
-> = 0;
+> = 1;
 
 uniform float3 f3UICurveBlackParam <
 	ui_type = "drag";
@@ -49,7 +49,7 @@ uniform float3 f3UICurveBlackParam <
 	ui_tooltip = UI_TOOLTIP_DEBUG;
 	ui_min = -10.0; ui_max = 10.0;
 	ui_step = 0.01;
-> = float3(0.2, 0.0, 0.0);
+> = float3(0.5, 0.0, 0.0);
 
 uniform float fUIColorTempScaling <
 	ui_type = "drag";
@@ -90,9 +90,9 @@ uniform int iUIDebug <
 uniform float fUIDebugLineWidth <
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_DEBUG;
-	ui_min = 0.0; ui_max = 10.0;
+	ui_min = 0.5; ui_max = 1.5;
 	ui_step = 0.1;
-> = 5.0;
+> = 1.0;
 
 uniform int2 i2UIDebugStatsWindowPos <
 	ui_type = "drag";
@@ -206,7 +206,7 @@ void Show_Stats_PS(float4 position : SV_Position, float2 texcoord : TEXCOORD, ou
 	float2 curves = CalculateLevels(texcoord.x);
 	float3 localFactor = saturate(Tools::Functions::Level(originalLuma.r, levels.x, levels.y).rrr);
 
-	sctpoint background = Tools::Draw::NewPoint(lerp(BLACK, WHITE, localFactor), offset, texcoord);
+	sctpoint background = Tools::Types::Point(lerp(BLACK, WHITE, localFactor), offset, texcoord);
 	
 	float3 warm = Tools::Color::YIQtoRGB(float3(0.5, YIQ_I_RANGE.y, 0.0));
 	float3 cold = Tools::Color::YIQtoRGB(float3(0.5, YIQ_I_RANGE.x, 0.0));
@@ -230,16 +230,16 @@ void Show_Stats_PS(float4 position : SV_Position, float2 texcoord : TEXCOORD, ou
 	sctpoint curveBlack 		= Tools::Types::Point(CYAN, offset,
 														float2(texcoord.x, 1.0 - curves.x));
 
-	result = Tools::Draw::Point(BLACK,	background,			texcoord);
-	result = Tools::Draw::Point(result,	scaleTemp,			texcoord);
-	result = Tools::Draw::Point(result,	scaleAvgColor,		texcoord);
-	result = Tools::Draw::Point(result,	scaleLuma,			texcoord);
-	result = Tools::Draw::Point(result,	markerAvgLuma,		texcoord);
-	result = Tools::Draw::Point(result,	markerLevelWhite,	texcoord);
-	result = Tools::Draw::Point(result,	markerLevelBlack,	texcoord);
-	result = Tools::Draw::Point(result,	markerTemp,			texcoord);
-	result = Tools::Draw::Point(result,	curveWhite,			texcoord);
-	result = Tools::Draw::Point(result,	curveBlack,			texcoord);
+	result = Tools::Draw::Point(BLACK,	background,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+	result = Tools::Draw::Point(result,	scaleTemp,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+	result = Tools::Draw::Point(result,	scaleAvgColor,		texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+	result = Tools::Draw::Point(result,	scaleLuma,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+	result = Tools::Draw::Point(result,	markerAvgLuma,		texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+	result = Tools::Draw::Point(result,	markerLevelWhite,	texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+	result = Tools::Draw::Point(result,	markerLevelBlack,	texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+	result = Tools::Draw::Point(result,	markerTemp,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+	result = Tools::Draw::Point(result,	curveWhite,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+	result = Tools::Draw::Point(result,	curveBlack,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
 }
 
 /*******************************************************

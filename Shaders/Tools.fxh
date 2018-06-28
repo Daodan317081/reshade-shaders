@@ -399,18 +399,10 @@ namespace Tools {
 
     namespace Draw {
 
-        float3 Point(float3 texcolor, sctpoint p, float2 texcoord) {
-            float2 pixelsize = ReShade::PixelSize * p.offset;
-            
-            if(p.coord.x == -1 || p.coord.y == -1)
-                return texcolor;
-
-            if(texcoord.x <= p.coord.x + pixelsize.x &&
-            texcoord.x >= p.coord.x - pixelsize.x &&
-            texcoord.y <= p.coord.y + pixelsize.y &&
-            texcoord.y >= p.coord.y - pixelsize.y)
-                return p.color;
-            return texcolor;
+        float3 Point(float3 texcolor, sctpoint p, float2 texcoord, float power) {
+            float2 pixelsize = ReShade::PixelSize * p.offset * float2(1.0, ReShade::AspectRatio);
+            float curve = saturate(exp(-power * length(texcoord - p.coord)));
+            return lerp(texcolor, p.color, curve);
         }
 
         float3 OverlaySampler(float3 image, sampler overlay, float scale, float2 texcoord, int2 offset, float opacity) {

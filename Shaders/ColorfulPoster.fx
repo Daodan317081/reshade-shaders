@@ -99,11 +99,10 @@ uniform float3 fUILineColor <
 
 ////////////////////////// Debug //////////////////////////
 
-uniform int iUIDebugOverlayPosterizeLevels <
-	ui_type = "combo";
+uniform bool iUIDebugOverlayPosterizeLevels <
+	//ui_type = "drag";
 	ui_category = UI_CATEGORY_DEBUG;
 	ui_label = "Show Posterization as Curve";
-	ui_items = "Off\0On\0";
 > = 0;
 
 uniform int iUIDebugMaps <
@@ -208,8 +207,8 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 
 	if(iUIDebugOverlayPosterizeLevels == 1) {
 		sctpoint curveStep = Tools::Types::Point(MAGENTA, 1.0, float2(texcoord.x, 1.0 - Tools::Functions::Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)));
-		result = Tools::Draw::Point(result, curveStep, texcoord);
-		backbuffer = Tools::Draw::Point(backbuffer, curveStep, texcoord);
+		result = Tools::Draw::Point(result, curveStep, texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+		backbuffer = Tools::Draw::Point(backbuffer, curveStep, texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
 	}
 
 	/*******************************************************
