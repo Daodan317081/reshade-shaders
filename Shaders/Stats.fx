@@ -98,10 +98,10 @@ void Create_Stats_Image_PS(float4 position : SV_Position, float2 texcoord : TEXC
     sctpoint scaleColorTemp = Tools::Types::Point(tmpScale, offset, float2(texcoord.x, texcoord.y > 0.5 ? texcoord.y : -1));
     sctpoint markerAvgColorTemp = Tools::Types::Point(BLACK, offset, float2(avgColorTemp, texcoord.y > 0.5 ? texcoord.y : -1));
     
-    result = Tools::Draw::Point(MAGENTA, scaleLuma, texcoord, 100.0);
-    result = Tools::Draw::Point(result, markerAvgLuma, texcoord, 100.0);
-    result = Tools::Draw::Point(result, scaleColorTemp, texcoord, 100.0);
-    result = Tools::Draw::Point(result, markerAvgColorTemp, texcoord, 100.0);
+    result = Tools::Draw::Point(MAGENTA, scaleLuma, texcoord, STATS_DEBUG_IMAGE_WIDTH * 0.66);
+    result = Tools::Draw::Point(result, markerAvgLuma, texcoord, STATS_DEBUG_IMAGE_WIDTH * 0.66);
+    result = Tools::Draw::Point(result, scaleColorTemp, texcoord, STATS_DEBUG_IMAGE_WIDTH * 0.66);
+    result = Tools::Draw::Point(result, markerAvgColorTemp, texcoord, STATS_DEBUG_IMAGE_WIDTH * 0.66);
 }
 
 /*******************************************************
