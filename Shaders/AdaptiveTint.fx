@@ -86,14 +86,14 @@ uniform int iUIDebug <
 	ui_label = "Show Tint Layer";
 	ui_items = "Off\0Tint\0Factor\0";
 > = 0;
-
+/*
 uniform float fUIDebugLineWidth <
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_DEBUG;
 	ui_min = 0.5; ui_max = 1.5;
 	ui_step = 0.1;
 > = 1.0;
-
+*/
 uniform int2 i2UIDebugStatsWindowPos <
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_DEBUG;
@@ -193,7 +193,6 @@ float3 AdaptiveTint_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : 
 void Show_Stats_PS(float4 position : SV_Position, float2 texcoord : TEXCOORD, out float3 result : SV_Target0) {	
 	float2 texSize = (float2)tex2Dsize(SamplerAdaptiveTintDebug, 0);
 	float2 margin = float2(0.02, 0.05);
-	float2 offset = fUIDebugLineWidth;
 
 	float3 originalBackBuffer = tex2D(shared_SamplerStats, texcoord).rgb;
 	float3 originalLuma = dot(originalBackBuffer, LumaCoeff).xxx;
@@ -206,40 +205,33 @@ void Show_Stats_PS(float4 position : SV_Position, float2 texcoord : TEXCOORD, ou
 	float2 curves = CalculateLevels(texcoord.x);
 	float3 localFactor = saturate(Tools::Functions::Level(originalLuma.r, levels.x, levels.y).rrr);
 
-	sctpoint background = Tools::Types::Point(lerp(BLACK, WHITE, localFactor), offset, texcoord);
+	sctpoint background = Tools::Types::Point(lerp(BLACK, WHITE, localFactor), texcoord);
 	
 	float3 warm = Tools::Color::YIQtoRGB(float3(0.5, YIQ_I_RANGE.y, 0.0));
 	float3 cold = Tools::Color::YIQtoRGB(float3(0.5, YIQ_I_RANGE.x, 0.0));
 
-	sctpoint scaleTemp			= Tools::Types::Point(lerp(cold, warm, texcoord.y / (1.0 - margin.y)), offset,
-														float2(texcoord.x < margin.x ? texcoord.x : -1,	texcoord.y < 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerTemp 		= Tools::Types::Point(BLACK, offset,
-														float2(texcoord.x < margin.x ? texcoord.x : -1,	GetColorTemp(texcoord)));
-	sctpoint scaleAvgColor 		= Tools::Types::Point(avgColor, offset,
-														float2(texcoord.x < margin.x ? texcoord.x : -1,	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint scaleLuma 			= Tools::Types::Point(lerp(1.0, 0.0, (1.0 - texcoord.x) / (1.0 - margin.x)).rrr,	offset,
-														float2(texcoord.x > margin.x ? texcoord.x : -1,	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerAvgLuma 		= Tools::Types::Point(MAGENTA, offset,
-														float2((avgLuma + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerLevelWhite 	= Tools::Types::Point(RED, offset,
-														float2((levels.y + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerLevelBlack 	= Tools::Types::Point(CYAN, offset,
-														float2((levels.x + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint curveWhite 		= Tools::Types::Point(RED, offset,
-														float2(texcoord.x, 1.0 - curves.y));
-	sctpoint curveBlack 		= Tools::Types::Point(CYAN, offset,
-														float2(texcoord.x, 1.0 - curves.x));
+	sctpoint scaleTemp			= Tools::Types::Point(lerp(cold, warm, texcoord.y / (1.0 - margin.y)), float2(texcoord.x < margin.x ? texcoord.x : -1,	texcoord.y < 1.0 - margin.y ? texcoord.y : -1));
+	sctpoint markerTemp 		= Tools::Types::Point(BLACK, float2(texcoord.x < margin.x ? texcoord.x : -1,	GetColorTemp(texcoord)));
+	sctpoint scaleAvgColor 		= Tools::Types::Point(avgColor, float2(texcoord.x < margin.x ? texcoord.x : -1,	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
+	sctpoint scaleLuma 			= Tools::Types::Point(lerp(1.0, 0.0, (1.0 - texcoord.x) / (1.0 - margin.x)).rrr,	float2(texcoord.x > margin.x ? texcoord.x : -1,	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
+	sctpoint markerAvgLuma 		= Tools::Types::Point(MAGENTA, float2((avgLuma + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
+	sctpoint markerLevelWhite 	= Tools::Types::Point(RED, float2((levels.y + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
+	sctpoint markerLevelBlack 	= Tools::Types::Point(CYAN, float2((levels.x + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
+	sctpoint curveWhite 		= Tools::Types::Point(RED, float2(texcoord.x, 1.0 - curves.y));
+	sctpoint curveBlack 		= Tools::Types::Point(CYAN, float2(texcoord.x, 1.0 - curves.x));
+	
+	float falloff = UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66;
 
-	result = Tools::Draw::Point(BLACK,	background,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
-	result = Tools::Draw::Point(result,	scaleTemp,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
-	result = Tools::Draw::Point(result,	scaleAvgColor,		texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
-	result = Tools::Draw::Point(result,	scaleLuma,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
-	result = Tools::Draw::Point(result,	markerAvgLuma,		texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
-	result = Tools::Draw::Point(result,	markerLevelWhite,	texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
-	result = Tools::Draw::Point(result,	markerLevelBlack,	texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
-	result = Tools::Draw::Point(result,	markerTemp,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
-	result = Tools::Draw::Point(result,	curveWhite,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
-	result = Tools::Draw::Point(result,	curveBlack,			texcoord, UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66);
+	result = Tools::Draw::Point(BLACK,  background,			texcoord, falloff);
+	result = Tools::Draw::Point(result,	scaleTemp,			texcoord, falloff);
+	result = Tools::Draw::Point(result,	scaleAvgColor,		texcoord, falloff);
+	result = Tools::Draw::Point(result,	scaleLuma,			texcoord, falloff);
+	result = Tools::Draw::Point(result,	markerAvgLuma,		texcoord, falloff);
+	result = Tools::Draw::Point(result,	markerLevelWhite,	texcoord, falloff);
+	result = Tools::Draw::Point(result,	markerLevelBlack,	texcoord, falloff);
+	result = Tools::Draw::Point(result,	markerTemp,			texcoord, falloff);
+	result = Tools::Draw::Point(result,	curveWhite,			texcoord, falloff);
+	result = Tools::Draw::Point(result,	curveBlack,			texcoord, falloff);
 }
 
 /*******************************************************
