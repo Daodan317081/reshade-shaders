@@ -17,21 +17,6 @@
 ////////////////////////// Pencil Layer //////////////////////////
 
 //Outlines
-uniform int iUIOutlinesEnableThreshold <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_OUTLINES;
-	ui_label = "Enable Threshold";
-	ui_items = "Off\0On\0";
-> = 0;
-
-uniform float fUIOutlinesThreshold <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_OUTLINES;
-	ui_label = "Threshold";
-	ui_min = 0.0; ui_max = 1.0;
-	ui_step = 0.001;
-> = 0.5;
-
 uniform int iUIOutlinesFadeWithDistance <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_OUTLINES;
@@ -84,6 +69,15 @@ uniform int iUIDebugMaps <
 	ui_items = "Off\0Depth Buffer Outlines\0Luma Edges\0Chroma Edges\0Pencil Layer\0Show Depth Buffer\0";
 > = 0;
 
+uniform float fUIExp<
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_DEBUG;
+	ui_label = "Exp";
+	ui_min = 0.0; ui_max = 5.0;
+	ui_step = 0.01;
+> = 1.0;
+
+
 ////////////////////////// Effect //////////////////////////
 uniform float fUIStrength <
 	ui_type = "drag";
@@ -124,7 +118,8 @@ float3 Pencil_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Tar
 	float chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, vpos.xy, CONV_SOBEL_FULL, CONV_MAX).r * fUIConvStrength;
 
 	//Finalize pencil layer
-	float pencilLayer = saturate(outlinesDepthBuffer + lumaEdges + chromaEdges);
+	float pencilLayer = outlinesDepthBuffer + lumaEdges + chromaEdges;
+	pencilLayer = lerp(1.0.rrr, 0.0.rrr, saturate(exp(-fUIExp * length(pencilLayer))));
 	pencilLayer = pencilLayer < fUIConvClip ? 0.0 : pencilLayer;
 
 	/*******************************************************
