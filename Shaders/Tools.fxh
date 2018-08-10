@@ -139,7 +139,7 @@ namespace Tools {
         }
 
         float3 CMYKtoRGB(float4 cmyk) {
-            return float3((1.0-cmyk.x)*(1.0-cmyk.w),(1.0-cmyk.y)*(1.0-cmyk.w),(1.0-cmyk.z)*(1.0-cmyk.w));
+            return (1.0.xxx - cmyk.xyz) * (1.0 - cmyk.w);
         }
 
         float3 RGBtoHSV(float3 color) {
@@ -399,10 +399,12 @@ namespace Tools {
 
     namespace Draw {
 
+        float3 Point2(float3 texcolor, float3 pointcolor, float2 pointcoord, float2 texcoord, float power) {
+            return lerp(texcolor, pointcolor, saturate(exp(-power * length(texcoord - pointcoord))));
+        }
+        
         float3 Point(float3 texcolor, sctpoint p, float2 texcoord, float power) {
-            float2 pixelsize = ReShade::PixelSize * p.offset * float2(1.0, ReShade::AspectRatio);
-            float curve = saturate(exp(-power * length(texcoord - p.coord)));
-            return lerp(texcolor, p.color, curve);
+            return lerp(texcolor, p.color, saturate(exp(-power * length(texcoord - p.coord))));
         }
 
         float3 OverlaySampler(float3 image, sampler overlay, float scale, float2 texcoord, int2 offset, float opacity) {
