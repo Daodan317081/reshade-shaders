@@ -88,8 +88,12 @@ float3 DrawGrid(float3 backbuffer, float3 gridColor, float aspectRatio, float fr
 			
 		if(((vpos.y - borderSize) % fractionWidth) < 1)
 			retVal = gridColor;
+
 	}
 
+	if(vpos.x <= 1 || vpos.x >= BUFFER_WIDTH-1 || vpos.y <= 1 || vpos.y >= BUFFER_HEIGHT-1)
+		retVal = gridColor;
+	
 	return retVal;
 }
 
