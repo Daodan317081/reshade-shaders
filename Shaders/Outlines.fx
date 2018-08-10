@@ -1,4 +1,5 @@
 #include "ReShade.fxh"
+#include "Tools.fxh"
 
 uniform int iUIOutlinesFadeWithDistance <
 	ui_type = "combo";
