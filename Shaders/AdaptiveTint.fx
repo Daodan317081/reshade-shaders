@@ -220,18 +220,18 @@ void Show_Stats_PS(float4 position : SV_Position, float2 texcoord : TEXCOORD, ou
 	sctpoint curveWhite 		= Tools::Types::Point(RED, float2(texcoord.x, 1.0 - curves.y));
 	sctpoint curveBlack 		= Tools::Types::Point(CYAN, float2(texcoord.x, 1.0 - curves.x));
 	
-	float falloff = UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * 0.66;
+	float falloff = 0.003;
 
-	result = Tools::Draw::Point(BLACK,  background,			texcoord, falloff);
-	result = Tools::Draw::Point(result,	scaleTemp,			texcoord, falloff);
-	result = Tools::Draw::Point(result,	scaleAvgColor,		texcoord, falloff);
-	result = Tools::Draw::Point(result,	scaleLuma,			texcoord, falloff);
-	result = Tools::Draw::Point(result,	markerAvgLuma,		texcoord, falloff);
-	result = Tools::Draw::Point(result,	markerLevelWhite,	texcoord, falloff);
-	result = Tools::Draw::Point(result,	markerLevelBlack,	texcoord, falloff);
-	result = Tools::Draw::Point(result,	markerTemp,			texcoord, falloff);
-	result = Tools::Draw::Point(result,	curveWhite,			texcoord, falloff);
-	result = Tools::Draw::Point(result,	curveBlack,			texcoord, falloff);
+	result = Tools::Draw::PointAASTEP(BLACK,  background,			texcoord, falloff);
+	result = Tools::Draw::PointAASTEP(result,	scaleTemp,			texcoord, falloff);
+	result = Tools::Draw::PointAASTEP(result,	scaleAvgColor,		texcoord, falloff);
+	result = Tools::Draw::PointAASTEP(result,	scaleLuma,			texcoord, falloff);
+	result = Tools::Draw::PointAASTEP(result,	markerAvgLuma,		texcoord, falloff);
+	result = Tools::Draw::PointAASTEP(result,	markerLevelWhite,	texcoord, falloff);
+	result = Tools::Draw::PointAASTEP(result,	markerLevelBlack,	texcoord, falloff);
+	result = Tools::Draw::PointAASTEP(result,	markerTemp,			texcoord, falloff);
+	result = Tools::Draw::PointAASTEP(result,	curveWhite,			texcoord, falloff);
+	result = Tools::Draw::PointAASTEP(result,	curveBlack,			texcoord, falloff);
 }
 
 /*******************************************************
