@@ -77,7 +77,6 @@ uniform int iUIEdgeMergeMethod <
 struct sctpoint {
     float3 color;
     float2 coord;
-    float2 offset;
 };
 
 
@@ -104,10 +103,9 @@ namespace Tools {
 
     namespace Types {
         
-        sctpoint Point(float3 color, float2 offset, float2 coord) {
+        sctpoint Point(float3 color, float2 coord) {
             sctpoint p;
             p.color = color;
-            p.offset = offset;
             p.coord = coord;
             return p;
         }
@@ -399,12 +397,22 @@ namespace Tools {
 
     namespace Draw {
 
+        float aastep(float threshold, float value)
+        {
+            float afwidth = length(float2(ddx(value), ddy(value)));
+            return smoothstep(threshold - afwidth, threshold + afwidth, value);
+        }
+
         float3 Point2(float3 texcolor, float3 pointcolor, float2 pointcoord, float2 texcoord, float power) {
             return lerp(texcolor, pointcolor, saturate(exp(-power * length(texcoord - pointcoord))));
         }
         
-        float3 Point(float3 texcolor, sctpoint p, float2 texcoord, float power) {
+        float3 PointEXP(float3 texcolor, sctpoint p, float2 texcoord, float power) {
             return lerp(texcolor, p.color, saturate(exp(-power * length(texcoord - p.coord))));
+        }
+
+       float3 PointAASTEP(float3 texcolor, sctpoint p, float2 texcoord, float power) {
+            return lerp(p.color, texcolor, aastep(power, length(texcoord - p.coord)));
         }
 
         float3 OverlaySampler(float3 image, sampler overlay, float scale, float2 texcoord, int2 offset, float opacity) {
