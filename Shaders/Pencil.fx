@@ -119,7 +119,7 @@ float3 Pencil_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Tar
 
 	//Finalize pencil layer
 	float pencilLayer = outlinesDepthBuffer + lumaEdges + chromaEdges;
-	pencilLayer = lerp(1.0.rrr, 0.0.rrr, saturate(exp(-fUIExp * length(pencilLayer))));
+	pencilLayer = lerp(1.0, 0.0, saturate(exp(-fUIExp * length(pencilLayer))));
 	pencilLayer = pencilLayer < fUIConvClip ? 0.0 : pencilLayer;
 
 	/*******************************************************
