@@ -114,6 +114,15 @@ uniform int iUIDebugMaps <
 	ui_items = "Off\0Posterized Luma\0Depth Buffer Outlines\0Luma Edges\0Chroma Edges\0Pencil Layer\0Show Depth Buffer\0";
 > = 0;
 
+uniform float fUIThreshold<
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_DEBUG;
+	ui_label = "Threshold";
+	ui_min = 0.0; ui_max = 1.0;
+	ui_step = 0.001;
+> = 0.5;
+
+
 ////////////////////////// Effect //////////////////////////
 
 uniform float fUIStrength <
@@ -208,9 +217,9 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		return ReShade::GetLinearizedDepth(texcoord).rrr;
 
 	if(iUIDebugOverlayPosterizeLevels == 1) {
-		sctpoint curveStep = Tools::Types::Point(MAGENTA, 1.0, float2(texcoord.x, 1.0 - Tools::Functions::Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)));
-		result = Tools::Draw::Point(result, curveStep, texcoord, BUFFER_WIDTH * 0.66);
-		backbuffer = Tools::Draw::Point(backbuffer, curveStep, texcoord, BUFFER_WIDTH * 0.66);
+		sctpoint curveStep = Tools::Types::Point(MAGENTA, float2(texcoord.x, 1.0 - Tools::Functions::Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)));
+		result = Tools::Draw::PointAASTEP(result, curveStep, texcoord, fUIThreshold);
+		backbuffer = Tools::Draw::PointAASTEP(backbuffer, curveStep, texcoord, fUIThreshold);
 	}
 
 	/*******************************************************
