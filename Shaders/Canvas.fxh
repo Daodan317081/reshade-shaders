@@ -6,6 +6,14 @@
 #include "ReShade.fxh"
 
 /*******************************************************
+	Only used in this header
+*******************************************************/
+#define CANVAS_TEXTURE_NAME(name) tex##name
+#define CANVAS_SAMPLER_NAME(name) s##name
+#define CANVAS_DRAW_SHADER_NAME(name) name##draw
+#define CANVAS_OVERLAY_SHADER_NAME(name) name##overlay
+
+/*******************************************************
 	Functions for drawing,
     not necessary to use them directly
 *******************************************************/
@@ -43,15 +51,23 @@ namespace Canvas {
     float3 DrawCurve(float3 texcolor, float3 pointcolor, float2 pointcoord, float2 texcoord, float threshold) {
         return lerp(pointcolor, texcolor, aastep(threshold, length(texcoord - pointcoord)));
     }
+    float3 DrawVerticalScale(float3 texcolor, float3 color_begin, float3 color_end, int scale_pos, int scale_width, float2 texcoord, sampler s) {
+        int2 texSize = tex2Dsize(s, 0);
+        int2 pixelcoord = texcoord * texSize;
+        if(pixelcoord.x >= scale_pos && pixelcoord.x <= scale_pos + scale_width) {
+            texcolor = lerp(color_begin, color_end, texcoord.y);
+        }
+        return texcolor;
+    }
+    float3 DrawHorizontalScale(float3 texcolor, float3 color_begin, float3 color_end, int scale_pos, int scale_width, float2 texcoord, sampler s) {
+        int2 texSize = tex2Dsize(s, 0);
+        int2 pixelcoord = texcoord * texSize;
+        if(pixelcoord.y >= scale_pos && pixelcoord.y <= scale_pos + scale_width) {
+            texcolor = lerp(color_begin, color_end, texcoord.x);
+        }
+        return texcolor;
+    }
 }
-
-/*******************************************************
-	Only used in this header
-*******************************************************/
-#define CANVAS_TEXTURE_NAME(name) tex##name
-#define CANVAS_SAMPLER_NAME(name) s##name
-#define CANVAS_DRAW_SHADER_NAME(name) name##draw
-#define CANVAS_OVERLAY_SHADER_NAME(name) name##overlay
 
 /*******************************************************
 	Setting up the canvas:
@@ -87,14 +103,16 @@ namespace Canvas {
 #define CANVAS_DRAW_SHADER(name) CANVAS_DRAW_SHADER_NAME(name)(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
 #define CANVAS_SET_BACKGROUND(name, color) float3 name = color
 #define CANVAS_DRAW_CURVE_XY(name, color, func) name = Canvas::DrawCurve(name, color, float2(texcoord.x, func), float2(texcoord.x, 1.0 - texcoord.y), 0.002)
-#define CANVAS_DRAW_CURVE_YX(name, color, func) name = Canvas::DrawCurve(name, color, float2(func, texcoord.y), float2(texcoord.x, texcoord.y), 0.002)
+#define CANVAS_DRAW_CURVE_YX(name, color, func) name = Canvas::DrawCurve(name, color, float2(func, texcoord.y), texcoord, 0.002)
+#define CANVAS_DRAW_VERTICAL_SCALE(name, color_begin, color_end, scale_pos, scale_width) name = Canvas::DrawVerticalScale(name, color_begin, color_end, scale_pos, scale_width, texcoord, CANVAS_SAMPLER_NAME(name))
+#define CANVAS_DRAW_HORIZONTAL_SCALE(name, color_begin, color_end, scale_pos, scale_width) name = Canvas::DrawHorizontalScale(name, color_begin, color_end, scale_pos, scale_width, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(name))
 #define CANVAS_FINALIZE(name) return name
 
 /*******************************************************
 	Add technique to show canvas
 *******************************************************/
 #define CANVAS_TECHNIQUE(name) \
-    technique technique##name { \
+    technique name { \
         pass { \
             VertexShader = PostProcessVS; \
             PixelShader = CANVAS_DRAW_SHADER_NAME(name); \
