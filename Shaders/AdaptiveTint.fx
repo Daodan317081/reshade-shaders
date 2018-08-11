@@ -6,6 +6,7 @@
 #include "ReShade.fxh"
 #include "Stats.fxh"
 #include "Tools.fxh"
+#include "Canvas.fxh"
 
 #ifndef UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH
 	#define UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH 300
@@ -86,21 +87,6 @@ uniform int iUIDebug <
 	ui_label = "Show Tint Layer";
 	ui_items = "Off\0Tint\0Factor\0";
 > = 0;
-/*
-uniform float fUIDebugLineWidth <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_DEBUG;
-	ui_min = 0.5; ui_max = 1.5;
-	ui_step = 0.1;
-> = 1.0;
-*/
-uniform int2 i2UIDebugStatsWindowPos <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_DEBUG;
-	ui_label = "Stats Window Position";
-	ui_min = 0; ui_max = BUFFER_WIDTH;
-	ui_step = 1;
-> = int2(0, 0);
 
 uniform float fUIStrength <
 	ui_type = "drag";
@@ -109,11 +95,11 @@ uniform float fUIStrength <
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
+
 /*******************************************************
 	Debug image
 *******************************************************/
-texture2D texAdaptiveTintDebug { Width = UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH; Height = UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH * ((float)BUFFER_HEIGHT/(float)BUFFER_WIDTH); Format = RGBA8; };
-sampler SamplerAdaptiveTintDebug { Texture = texAdaptiveTintDebug; };
+CANVAS_SETUP(AdaptiveTintDebug, BUFFER_WIDTH/4, BUFFER_HEIGHT/4)
 
 /*******************************************************
 	Checkerboard
@@ -190,60 +176,21 @@ float3 AdaptiveTint_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : 
 	Generate small image for shader debug/setup
 *******************************************************/
 
-void Show_Stats_PS(float4 position : SV_Position, float2 texcoord : TEXCOORD, out float3 result : SV_Target0) {	
-	float2 texSize = (float2)tex2Dsize(SamplerAdaptiveTintDebug, 0);
-	float2 margin = float2(0.02, 0.05);
-
+float3 CANVAS_DRAW_SHADER(AdaptiveTintDebug) {
 	float3 originalBackBuffer = tex2D(shared_SamplerStats, texcoord).rgb;
 	float3 originalLuma = dot(originalBackBuffer, LumaCoeff).xxx;
-
-	float3 avgColor = tex2D(shared_SamplerStatsAvgColor, 0.5.xx).rgb;
 	float avgLuma = tex2D(shared_SamplerStatsAvgLuma, 0.5.xx).r;
-	float2 levels = CalculateLevels(avgLuma);
-	float3 factor = saturate(Tools::Functions::Level(avgLuma, levels.x, levels.y).rrr);
-	
 	float2 curves = CalculateLevels(texcoord.x);
+	float2 levels = CalculateLevels(avgLuma);
 	float3 localFactor = saturate(Tools::Functions::Level(originalLuma.r, levels.x, levels.y).rrr);
 
-	sctpoint background = Tools::Types::Point(lerp(BLACK, WHITE, localFactor), texcoord);
-	
-	float3 warm = Tools::Color::YIQtoRGB(float3(0.5, YIQ_I_RANGE.y, 0.0));
-	float3 cold = Tools::Color::YIQtoRGB(float3(0.5, YIQ_I_RANGE.x, 0.0));
-
-	sctpoint scaleTemp			= Tools::Types::Point(lerp(cold, warm, texcoord.y / (1.0 - margin.y)), float2(texcoord.x < margin.x ? texcoord.x : -1,	texcoord.y < 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerTemp 		= Tools::Types::Point(BLACK, float2(texcoord.x < margin.x ? texcoord.x : -1,	GetColorTemp(texcoord)));
-	sctpoint scaleAvgColor 		= Tools::Types::Point(avgColor, float2(texcoord.x < margin.x ? texcoord.x : -1,	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint scaleLuma 			= Tools::Types::Point(lerp(1.0, 0.0, (1.0 - texcoord.x) / (1.0 - margin.x)).rrr,	float2(texcoord.x > margin.x ? texcoord.x : -1,	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerAvgLuma 		= Tools::Types::Point(MAGENTA, float2((avgLuma + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerLevelWhite 	= Tools::Types::Point(RED, float2((levels.y + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint markerLevelBlack 	= Tools::Types::Point(CYAN, float2((levels.x + margin.x) / (1.0 - margin.x),	texcoord.y > 1.0 - margin.y ? texcoord.y : -1));
-	sctpoint curveWhite 		= Tools::Types::Point(RED, float2(texcoord.x, 1.0 - curves.y));
-	sctpoint curveBlack 		= Tools::Types::Point(CYAN, float2(texcoord.x, 1.0 - curves.x));
-	
-	float falloff = 0.003;
-
-	result = Tools::Draw::PointAASTEP(BLACK,  background,			texcoord, falloff);
-	result = Tools::Draw::PointAASTEP(result,	scaleTemp,			texcoord, falloff);
-	result = Tools::Draw::PointAASTEP(result,	scaleAvgColor,		texcoord, falloff);
-	result = Tools::Draw::PointAASTEP(result,	scaleLuma,			texcoord, falloff);
-	result = Tools::Draw::PointAASTEP(result,	markerAvgLuma,		texcoord, falloff);
-	result = Tools::Draw::PointAASTEP(result,	markerLevelWhite,	texcoord, falloff);
-	result = Tools::Draw::PointAASTEP(result,	markerLevelBlack,	texcoord, falloff);
-	result = Tools::Draw::PointAASTEP(result,	markerTemp,			texcoord, falloff);
-	result = Tools::Draw::PointAASTEP(result,	curveWhite,			texcoord, falloff);
-	result = Tools::Draw::PointAASTEP(result,	curveBlack,			texcoord, falloff);
-}
-
-/*******************************************************
-	Draw Debugimage on backbuffer
-*******************************************************/
-
-float3 AdaptiveTint_Merge_Stats_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
-	float3 backbuffer = tex2D(ReShade::BackBuffer, texcoord).rgb;
-	int2 texsize = tex2Dsize(SamplerAdaptiveTintDebug, 0);
-	int x = clamp(i2UIDebugStatsWindowPos.x, 0, BUFFER_WIDTH - texsize.x);
-	int y = clamp(i2UIDebugStatsWindowPos.y, 0, BUFFER_HEIGHT - texsize.y);
-	return Tools::Draw::OverlaySampler(backbuffer, SamplerAdaptiveTintDebug, 1.0, texcoord, int2(x,y), 1.0);
+    CANVAS_SET_BACKGROUND(AdaptiveTintDebug, localFactor);
+    CANVAS_DRAW_CURVE_XY(AdaptiveTintDebug, RED, curves.y);
+    CANVAS_DRAW_CURVE_XY(AdaptiveTintDebug, CYAN, curves.x);
+	CANVAS_DRAW_CURVE_YX(AdaptiveTintDebug, MAGENTA, avgLuma);
+	CANVAS_DRAW_VERTICAL_SCALE(AdaptiveTintDebug, BLACK, WHITE, 0, 20);
+	CANVAS_DRAW_HORIZONTAL_SCALE(AdaptiveTintDebug, GREEN, YELLOW, 0, 20);
+    CANVAS_FINALIZE(AdaptiveTintDebug);
 }
 
 technique AdaptiveTint
@@ -254,15 +201,4 @@ technique AdaptiveTint
 	}
 }
 
-
-technique AdaptiveTintDebug {
-	pass {
-		VertexShader = PostProcessVS;
-		PixelShader = Show_Stats_PS;
-		RenderTarget0 = texAdaptiveTintDebug;
-	}
-	pass {
-		VertexShader = PostProcessVS;
-		PixelShader = AdaptiveTint_Merge_Stats_PS;
-	}
-}
+CANVAS_TECHNIQUE(AdaptiveTintDebug)
