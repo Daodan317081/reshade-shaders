@@ -51,21 +51,33 @@ namespace Canvas {
     float3 DrawCurve(float3 texcolor, float3 pointcolor, float2 pointcoord, float2 texcoord, float threshold) {
         return lerp(pointcolor, texcolor, aastep(threshold, length(texcoord - pointcoord)));
     }
-    float3 DrawVerticalScale(float3 texcolor, float3 color_begin, float3 color_end, int scale_pos, int scale_width, float value, float3 color_marker, float2 texcoord, sampler s, float threshold) {
+    float3 DrawScale(float3 texcolor, float3 color_begin, float3 color_end, int2 scale_pos, int2 scale_size, float value, float3 color_marker, float2 texcoord, sampler s, float threshold) {
         int2 texSize = tex2Dsize(s, 0);
+        
+        //Clamp values
+        scale_size.x = clamp(scale_size.x, 0, texSize.x);
+        scale_size.y = clamp(scale_size.y, 0, texSize.y);
+        scale_pos.x = clamp(scale_pos.x, 0, texSize.x - scale_size.x);
+        scale_pos.y = clamp(scale_pos.y, 0, texSize.y - scale_size.y);
+        
+        float2 scalePosFloat = (float2)scale_pos / (float2)scale_size;
         int2 pixelcoord = texcoord * texSize;
-        if(pixelcoord.x >= scale_pos && pixelcoord.x <= scale_pos + scale_width) {
-            texcolor = lerp(color_begin, color_end, texcoord.y);
-            texcolor = DrawCurve(texcolor, color_marker, float2(texcoord.x, value), texcoord, threshold);
-        }
-        return texcolor;
-    }
-    float3 DrawHorizontalScale(float3 texcolor, float3 color_begin, float3 color_end, int scale_pos, int scale_width, float value, float3 color_marker, float2 texcoord, sampler s, float threshold) {
-        int2 texSize = tex2Dsize(s, 0);
-        int2 pixelcoord = texcoord * texSize;
-        if(pixelcoord.y >= scale_pos && pixelcoord.y <= scale_pos + scale_width) {
-            texcolor = lerp(color_begin, color_end, texcoord.x);
-            texcolor = DrawCurve(texcolor, color_marker, float2(value, texcoord.y), texcoord, threshold);
+        float2 sizeFactor = (float2)scale_size / (float2)texSize;
+
+        if( pixelcoord.x >= scale_pos.x &&
+            pixelcoord.x <= scale_pos.x + scale_size.x &&
+            pixelcoord.y <= scale_pos.y + scale_size.y &&
+            pixelcoord.y >= scale_pos.y ) {
+            if(scale_size.y >= scale_size.x) {
+                //Vertical scale
+                texcolor = lerp(color_begin, color_end, texcoord.y / sizeFactor.y - scalePosFloat.y);
+                texcolor = DrawCurve(texcolor, color_marker, float2(texcoord.x, (value + scalePosFloat.y) * sizeFactor.y), texcoord, threshold);
+            }
+            else {
+                //Horizontal scale
+                texcolor = lerp(color_begin, color_end, texcoord.x / sizeFactor.x - scalePosFloat.x);
+                texcolor = DrawCurve(texcolor, color_marker, float2((value + scalePosFloat.x) * sizeFactor.x, texcoord.y), texcoord, threshold);
+            }
         }
         return texcolor;
     }
@@ -106,8 +118,7 @@ namespace Canvas {
 #define CANVAS_SET_BACKGROUND(name, color) float3 name = color
 #define CANVAS_DRAW_CURVE_XY(name, color, func) name = Canvas::DrawCurve(name, color, float2(texcoord.x, func), float2(texcoord.x, 1.0 - texcoord.y), 0.002)
 #define CANVAS_DRAW_CURVE_YX(name, color, func) name = Canvas::DrawCurve(name, color, float2(func, texcoord.y), texcoord, 0.002)
-#define CANVAS_DRAW_VERTICAL_SCALE(name, color_begin, color_end, scale_pos, scale_width, value, color_marker) name = Canvas::DrawVerticalScale(name, color_begin, color_end, scale_pos, scale_width, value, color_marker, texcoord, CANVAS_SAMPLER_NAME(name), 0.002)
-#define CANVAS_DRAW_HORIZONTAL_SCALE(name, color_begin, color_end, scale_pos, scale_width, value, color_marker) name = Canvas::DrawHorizontalScale(name, color_begin, color_end, scale_pos, scale_width, value, color_marker, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(name), 0.002)
+#define CANVAS_DRAW_SCALE(name, color_begin, color_end, scale_pos, scale_size, value, color_marker) name = Canvas::DrawScale(name, color_begin, color_end, scale_pos, scale_size, value, color_marker, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(name), 0.002)
 #define CANVAS_FINALIZE(name) return name
 
 /*******************************************************
