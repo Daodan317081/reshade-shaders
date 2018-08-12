@@ -185,8 +185,8 @@ float3 CANVAS_DRAW_SHADER(AdaptiveTintDebug) {
 	float3 localFactor = saturate(Tools::Functions::Level(originalLuma.r, levels.x, levels.y).rrr);
 
     CANVAS_SET_BACKGROUND(AdaptiveTintDebug, localFactor);
-	CANVAS_DRAW_VERTICAL_SCALE(AdaptiveTintDebug, ORANGE, CYAN, 0, 10, GetColorTemp(texcoord), BLACK);
-	CANVAS_DRAW_HORIZONTAL_SCALE(AdaptiveTintDebug, BLACK, WHITE, 0, 10, avgLuma, MAGENTA);
+	CANVAS_DRAW_SCALE(AdaptiveTintDebug, RED, BLUE, int2(0, 10), int2(10, BUFFER_HEIGHT/4-10), GetColorTemp(texcoord), BLACK);
+	CANVAS_DRAW_SCALE(AdaptiveTintDebug, BLACK, WHITE, int2(10, 0), int2(BUFFER_WIDTH/4-10, 10), avgLuma, MAGENTA);
     CANVAS_DRAW_CURVE_XY(AdaptiveTintDebug, RED, curves.y);
     CANVAS_DRAW_CURVE_XY(AdaptiveTintDebug, CYAN, curves.x);
     CANVAS_FINALIZE(AdaptiveTintDebug);
