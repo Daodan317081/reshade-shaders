@@ -131,7 +131,7 @@ float2 CalculateLevels(float avgLuma) {
 }
 
 float GetColorTemp(float2 texcoord) {
-	float colorTemp = tex2D(shared_SamplerStatsAvgColorTemp, 0.5.xx).x;
+	float colorTemp = Stats::AverageColorTemp();
 	return Tools::Functions::Map(colorTemp * fUIColorTempScaling, YIQ_I_RANGE, FLOAT_RANGE);
 }
 
@@ -157,7 +157,7 @@ float3 AdaptiveTint_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : 
 		Apply black and white levels to luma, desaturate
 	*******************************************************/
 	float3 luma   = dot(backbuffer, LumaCoeff).rrr;
-	float2 levels = CalculateLevels(tex2D(shared_SamplerStatsAvgLuma, 0.5.xx).x);
+	float2 levels = CalculateLevels(Stats::AverageLuma());
 	float3 factor = Tools::Functions::Level(luma.r, levels.x, levels.y).rrr;
 	float3 result = lerp(tint, lerp(luma, backbuffer, fUISaturation + 1.0), factor);
 
@@ -177,9 +177,10 @@ float3 AdaptiveTint_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : 
 *******************************************************/
 
 float3 CANVAS_DRAW_SHADER(AdaptiveTintDebug) {
-	float3 originalBackBuffer = tex2D(shared_SamplerStats, texcoord).rgb;
+	float3 originalBackBuffer = Stats::OriginalBackBuffer(texcoord);
 	float3 originalLuma = dot(originalBackBuffer, LumaCoeff).xxx;
-	float avgLuma = tex2D(shared_SamplerStatsAvgLuma, 0.5.xx).r;
+	float avgLuma = Stats::AverageLuma();
+	float3 avgColor = Stats::AverageColor();
 	float2 curves = CalculateLevels(texcoord.x);
 	float2 levels = CalculateLevels(avgLuma);
 	float3 localFactor = saturate(Tools::Functions::Level(originalLuma.r, levels.x, levels.y).rrr);
