@@ -8,10 +8,10 @@
 /*******************************************************
 	Only used in this header
 *******************************************************/
-#define CANVAS_TEXTURE_NAME(name) tex##name
-#define CANVAS_SAMPLER_NAME(name) s##name
-#define CANVAS_DRAW_SHADER_NAME(name) name##draw
-#define CANVAS_OVERLAY_SHADER_NAME(name) name##overlay
+#define CANVAS_TEXTURE_NAME(ref) tex##ref
+#define CANVAS_SAMPLER_NAME(ref) s##ref
+#define CANVAS_DRAW_SHADER_NAME(ref) ref##draw
+#define CANVAS_OVERLAY_SHADER_NAME(ref) ref##overlay
 
 /*******************************************************
 	Functions for drawing,
@@ -51,6 +51,23 @@ namespace Canvas {
     float3 DrawCurve(float3 texcolor, float3 pointcolor, float2 pointcoord, float2 texcoord, float threshold) {
         return lerp(pointcolor, texcolor, aastep(threshold, length(texcoord - pointcoord)));
     }
+    float3 DrawBox(float3 texcolor, float3 color, int2 pos, int2 size, float2 texcoord, sampler s) {
+        int2 texSize = tex2Dsize(s, 0);
+        int2 pixelcoord = texcoord * texSize;
+        //Clamp values
+        size.y = clamp(size.y, 0, texSize.y);
+        size.x = clamp(size.x, 0, texSize.x);
+        pos.x = clamp(pos.x, 0, texSize.x - size.x);
+        pos.y = clamp(pos.y, 0, texSize.y - size.y);
+
+        if( pixelcoord.x >= pos.x &&
+            pixelcoord.x <= pos.x + size.x &&
+            pixelcoord.y <= pos.y + size.y &&
+            pixelcoord.y >= pos.y ) {
+                texcolor = color;
+        }
+        return texcolor;
+    }
     float3 DrawScale(float3 texcolor, float3 color_begin, float3 color_end, int2 scale_pos, int2 scale_size, float value, float3 color_marker, float2 texcoord, sampler s, float threshold) {
         int2 texSize = tex2Dsize(s, 0);
         
@@ -89,51 +106,52 @@ namespace Canvas {
     - Add texture and sampler for canvas
     - Add function to show the canvas
 *******************************************************/
-#define CANVAS_SETUP(name, width, height) \
-    uniform int2 name##Position < \
+#define CANVAS_SETUP(ref, width, height) \
+    uniform int2 ref##Position < \
         ui_type = "drag"; \
-        ui_category = #name; \
+        ui_category = #ref; \
         ui_label = "Position"; \
         ui_min = 0; ui_max = BUFFER_WIDTH; \
         ui_step = 1; \
     > = int2(0, 0); \
-    uniform float name##Opacity < \
+    uniform float ref##Opacity < \
         ui_type = "drag"; \
-        ui_category = #name; \
+        ui_category = #ref; \
         ui_label = "Opacity"; \
         ui_min = 0.0; ui_max = 1.0; \
         ui_step = 0.01; \
     > = 1.0; \
-    texture2D CANVAS_TEXTURE_NAME(name) { Width = width; Height = height; Format = RGBA8; }; \
-    sampler2D CANVAS_SAMPLER_NAME(name) { Texture = CANVAS_TEXTURE_NAME(name); }; \
-    float3 CANVAS_OVERLAY_SHADER_NAME(name)(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target { \
+    texture2D CANVAS_TEXTURE_NAME(ref) { Width = width; Height = height; Format = RGBA8; }; \
+    sampler2D CANVAS_SAMPLER_NAME(ref) { Texture = CANVAS_TEXTURE_NAME(ref); }; \
+    float3 CANVAS_OVERLAY_SHADER_NAME(ref)(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target { \
         float3 backbuffer = tex2D(ReShade::BackBuffer, texcoord).rgb; \
-        return Canvas::OverlaySampler(backbuffer, CANVAS_SAMPLER_NAME(name), 1.0, texcoord, name##Position, name##Opacity); \
+        return Canvas::OverlaySampler(backbuffer, CANVAS_SAMPLER_NAME(ref), 1.0, texcoord, ref##Position, ref##Opacity); \
     }  
 
 /*******************************************************
 	For drawing
 *******************************************************/
-#define CANVAS_DRAW_SHADER(name) CANVAS_DRAW_SHADER_NAME(name)(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
-#define CANVAS_SET_BACKGROUND(name, color) float3 name = color
-#define CANVAS_DRAW_CURVE_XY(name, color, func) name = Canvas::DrawCurve(name, color, float2(texcoord.x, func), float2(texcoord.x, 1.0 - texcoord.y), 0.002)
-#define CANVAS_DRAW_CURVE_YX(name, color, func) name = Canvas::DrawCurve(name, color, float2(func, texcoord.y), texcoord, 0.002)
-#define CANVAS_DRAW_SCALE(name, color_begin, color_end, scale_pos, scale_size, value, color_marker) name = Canvas::DrawScale(name, color_begin, color_end, scale_pos, scale_size, value, color_marker, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(name), 0.002)
-#define CANVAS_FINALIZE(name) return name
+#define CANVAS_DRAW_SHADER(ref) CANVAS_DRAW_SHADER_NAME(ref)(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
+#define CANVAS_SET_BACKGROUND(ref, color) float3 ref = color
+#define CANVAS_DRAW_CURVE_XY(ref, color, func) ref = Canvas::DrawCurve(ref, color, float2(texcoord.x, func), float2(texcoord.x, 1.0 - texcoord.y), 0.002)
+#define CANVAS_DRAW_CURVE_YX(ref, color, func) ref = Canvas::DrawCurve(ref, color, float2(func, texcoord.y), texcoord, 0.002)
+#define CANVAS_DRAW_SCALE(ref, color_begin, color_end, scale_pos, scale_size, value, color_marker) ref = Canvas::DrawScale(ref, color_begin, color_end, scale_pos, scale_size, value, color_marker, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(ref), 0.002)
+#define CANVAS_DRAW_BOX(ref, color, pos, size) ref = Canvas::DrawBox(ref, color, pos, size, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(ref))
+#define CANVAS_FINALIZE(ref) return ref
 
 /*******************************************************
 	Add technique to show canvas
 *******************************************************/
-#define CANVAS_TECHNIQUE(name) \
-    technique name { \
+#define CANVAS_TECHNIQUE(ref) \
+    technique ref { \
         pass { \
             VertexShader = PostProcessVS; \
-            PixelShader = CANVAS_DRAW_SHADER_NAME(name); \
-            RenderTarget0 = CANVAS_TEXTURE_NAME(name); \
+            PixelShader = CANVAS_DRAW_SHADER_NAME(ref); \
+            RenderTarget0 = CANVAS_TEXTURE_NAME(ref); \
         } \
         pass { \
             VertexShader = PostProcessVS; \
-            PixelShader = CANVAS_OVERLAY_SHADER_NAME(name); \
+            PixelShader = CANVAS_OVERLAY_SHADER_NAME(ref); \
         } \
     }
 
@@ -148,20 +166,52 @@ uniform float SineFreq<
     ui_type = "drag";
     ui_label = "Sine Frequency";
     ui_min = 0.0; ui_max = 20.0;
+    ui_step = 0.001;
+> = 2.0;
+
+uniform float SineAmplitude<
+    ui_type = "drag";
+    ui_label = "Sine Amplitude";
+    ui_min = 0.0; ui_max = 1.0;
+    ui_step = 0.001;
+> = 0.5;
+
+uniform float2 Chirp<
+    ui_type = "drag";
+    ui_label = "Chirp";
+    ui_min = 0.0; ui_max = 100.0;
     ui_step = 0.01;
-> = 6.28;
+> = float2(1.0, 10);
+
+uniform float Value<
+    ui_type = "drag";
+    ui_label = "Scale Value";
+    ui_min = 0.0; ui_max = 1.0;
+    ui_step = 0.001;
+> = 0.25;
 
 //Set up canvas
+//The origin of the coordinate system is on the bottom left
+//x-axis increases to the right
+//y-axis increases to the top
 CANVAS_SETUP(TestCanvas, BUFFER_WIDTH/2, BUFFER_HEIGHT/2)
 
 float3 CANVAS_DRAW_SHADER(TestCanvas) {
     //Use BackBuffer as background
     CANVAS_SET_BACKGROUND(TestCanvas, tex2D(ReShade::BackBuffer, texcoord).rgb);
-    //Draw a cros in the middle
-    CANVAS_DRAW_CURVE_XY(TestCanvas, float3(0.0, 1.0, 0.0), 0.5);
-    CANVAS_DRAW_CURVE_YX(TestCanvas, float3(0.0, 1.0, 0.0), 0.5);
+    //Draw lines in the middle
+    CANVAS_DRAW_CURVE_XY(TestCanvas, 0.3.rrr, 0.5);
+    CANVAS_DRAW_CURVE_YX(TestCanvas, 0.3.rrr, 0.5);
+    //Draw a box
+    CANVAS_DRAW_BOX(TestCanvas, float3(0.0, 1.0, 1.0), int2(0, 0), int2(10, 10));
+    //Draw scales (whether the marker runs horizontal or vertical is based on the size of the scale (aspect ratio))
+    CANVAS_DRAW_SCALE(TestCanvas, 0.7.rrr, 0.3.rrr, int2(0, 11), int2(10, BUFFER_HEIGHT/2 - 10), Value, float3(0.0, 1.0, 0.0));
+    CANVAS_DRAW_SCALE(TestCanvas, 0.0.rrr, 1.0.rrr, int2(11, 0), int2(BUFFER_WIDTH/2 - 10, 10), Value, float3(1.0, 0.0, 1.0));
     //Draw a sine
-    CANVAS_DRAW_CURVE_XY(TestCanvas, float3(1.0, 0.0, 0.0), sin(SineFreq * texcoord.x) * 0.5 + 0.5);
+    CANVAS_DRAW_CURVE_XY(TestCanvas, float3(1.0, 0.0, 0.0), SineAmplitude * sin(SineFreq * 2 * 3.14 * texcoord.x) * 0.5 + 0.5);
+    //Draw Chirp
+    float k = (Chirp.y - Chirp.x);
+    CANVAS_DRAW_CURVE_XY(TestCanvas, float3(1.0, 1.0, 0.0), sin(2 * 3.14 * (Chirp.x * texcoord.x + (k / 2.0) * texcoord.x * texcoord.x)) * 0.5 + 0.5);
     //return
     CANVAS_FINALIZE(TestCanvas);
 }
