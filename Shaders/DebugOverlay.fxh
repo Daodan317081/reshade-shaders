@@ -176,7 +176,6 @@ uniform float SineAmplitude<
     ui_step = 0.001;
 > = 0.5;
 
-<<<<<<< HEAD:Shaders/Canvas.fxh
 uniform float2 Chirp<
     ui_type = "drag";
     ui_label = "Chirp";
@@ -184,8 +183,6 @@ uniform float2 Chirp<
     ui_step = 0.01;
 > = float2(1.0, 10);
 
-=======
->>>>>>> 0bdd1397c0d3337dc5d7fff5acf836d8d8e3ff31:Shaders/DebugOverlay.fxh
 uniform float Value<
     ui_type = "drag";
     ui_label = "Scale Value";
@@ -212,12 +209,9 @@ float3 CANVAS_DRAW_SHADER(TestCanvas) {
     CANVAS_DRAW_SCALE(TestCanvas, 0.0.rrr, 1.0.rrr, int2(11, 0), int2(BUFFER_WIDTH/2 - 10, 10), Value, float3(1.0, 0.0, 1.0));
     //Draw a sine
     CANVAS_DRAW_CURVE_XY(TestCanvas, float3(1.0, 0.0, 0.0), SineAmplitude * sin(SineFreq * 2 * 3.14 * texcoord.x) * 0.5 + 0.5);
-<<<<<<< HEAD:Shaders/Canvas.fxh
     //Draw Chirp
     float k = (Chirp.y - Chirp.x);
     CANVAS_DRAW_CURVE_XY(TestCanvas, float3(1.0, 1.0, 0.0), sin(2 * 3.14 * (Chirp.x * texcoord.x + (k / 2.0) * texcoord.x * texcoord.x)) * 0.5 + 0.5);
-=======
->>>>>>> 0bdd1397c0d3337dc5d7fff5acf836d8d8e3ff31:Shaders/DebugOverlay.fxh
     //return
     CANVAS_FINALIZE(TestCanvas);
 }
