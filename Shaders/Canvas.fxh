@@ -68,24 +68,24 @@ namespace Canvas {
         }
         return texcolor;
     }
-    float3 DrawScale(float3 texcolor, float3 color_begin, float3 color_end, int2 scale_pos, int2 scale_size, float value, float3 color_marker, float2 texcoord, sampler s, float threshold) {
+    float3 DrawScale(float3 texcolor, float3 color_begin, float3 color_end, int2 pos, int2 size, float value, float3 color_marker, float2 texcoord, sampler s, float threshold) {
         int2 texSize = tex2Dsize(s, 0);
         
         //Clamp values
-        scale_size.x = clamp(scale_size.x, 0, texSize.x);
-        scale_size.y = clamp(scale_size.y, 0, texSize.y);
-        scale_pos.x = clamp(scale_pos.x, 0, texSize.x - scale_size.x);
-        scale_pos.y = clamp(scale_pos.y, 0, texSize.y - scale_size.y);
+        size.x = clamp(size.x, 0, texSize.x);
+        size.y = clamp(size.y, 0, texSize.y);
+        pos.x = clamp(pos.x, 0, texSize.x - size.x);
+        pos.y = clamp(pos.y, 0, texSize.y - size.y);
         
-        float2 scalePosFloat = (float2)scale_pos / (float2)scale_size;
+        float2 scalePosFloat = (float2)pos / (float2)size;
         int2 pixelcoord = texcoord * texSize;
-        float2 sizeFactor = (float2)scale_size / (float2)texSize;
+        float2 sizeFactor = (float2)size / (float2)texSize;
 
-        if( pixelcoord.x >= scale_pos.x &&
-            pixelcoord.x <= scale_pos.x + scale_size.x &&
-            pixelcoord.y <= scale_pos.y + scale_size.y &&
-            pixelcoord.y >= scale_pos.y ) {
-            if(scale_size.y >= scale_size.x) {
+        if( pixelcoord.x >= pos.x &&
+            pixelcoord.x <= pos.x + size.x &&
+            pixelcoord.y <= pos.y + size.y &&
+            pixelcoord.y >= pos.y ) {
+            if(size.y >= size.x) {
                 //Vertical scale
                 texcolor = lerp(color_begin, color_end, texcoord.y / sizeFactor.y - scalePosFloat.y);
                 texcolor = DrawCurve(texcolor, color_marker, float2(texcoord.x, (value + scalePosFloat.y) * sizeFactor.y), texcoord, threshold);
@@ -135,7 +135,7 @@ namespace Canvas {
 #define CANVAS_SET_BACKGROUND(ref, color) float3 ref = color
 #define CANVAS_DRAW_CURVE_XY(ref, color, func) ref = Canvas::DrawCurve(ref, color, float2(texcoord.x, func), float2(texcoord.x, 1.0 - texcoord.y), 0.002)
 #define CANVAS_DRAW_CURVE_YX(ref, color, func) ref = Canvas::DrawCurve(ref, color, float2(func, texcoord.y), texcoord, 0.002)
-#define CANVAS_DRAW_SCALE(ref, color_begin, color_end, scale_pos, scale_size, value, color_marker) ref = Canvas::DrawScale(ref, color_begin, color_end, scale_pos, scale_size, value, color_marker, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(ref), 0.002)
+#define CANVAS_DRAW_SCALE(ref, color_begin, color_end, pos, size, value, color_marker) ref = Canvas::DrawScale(ref, color_begin, color_end, pos, size, value, color_marker, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(ref), 0.002)
 #define CANVAS_DRAW_BOX(ref, color, pos, size) ref = Canvas::DrawBox(ref, color, pos, size, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(ref))
 #define CANVAS_FINALIZE(ref) return ref
 
