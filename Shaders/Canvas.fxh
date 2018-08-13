@@ -18,13 +18,13 @@
     not necessary to use them directly
 *******************************************************/
 namespace Canvas {
-    float3 OverlaySampler(float3 image, sampler overlay, float scale, float2 texcoord, int2 offset, float opacity) {
+    float3 OverlaySampler(float3 image, sampler overlay, float2 texcoord, int2 offset, float opacity) {
         float3 retVal;
         float3 col = image;
         float fac = 0.0;
 
         float2 screencoord = float2(BUFFER_WIDTH, BUFFER_HEIGHT) * texcoord;
-        float2 overlay_size = (float2)tex2Dsize(overlay, 0) * scale;
+        float2 overlay_size = (float2)tex2Dsize(overlay, 0);
         offset.x = clamp(offset.x, 0, BUFFER_WIDTH - overlay_size.x);
         offset.y = clamp(offset.y, 0, BUFFER_HEIGHT - overlay_size.y);
         float2 border_min = (float2)offset;
@@ -125,7 +125,7 @@ namespace Canvas {
     sampler2D CANVAS_SAMPLER_NAME(ref) { Texture = CANVAS_TEXTURE_NAME(ref); }; \
     float3 CANVAS_OVERLAY_SHADER_NAME(ref)(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target { \
         float3 backbuffer = tex2D(ReShade::BackBuffer, texcoord).rgb; \
-        return Canvas::OverlaySampler(backbuffer, CANVAS_SAMPLER_NAME(ref), 1.0, texcoord, ref##Position, ref##Opacity); \
+        return Canvas::OverlaySampler(backbuffer, CANVAS_SAMPLER_NAME(ref), texcoord, ref##Position, ref##Opacity); \
     }  
 
 /*******************************************************
