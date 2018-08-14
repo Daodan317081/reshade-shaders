@@ -24,5 +24,5 @@ namespace Stats {
 
 	texture2D shared_texStatsAvgColorTemp { Format = R16F; };
 	sampler2D shared_SamplerStatsAvgColorTemp { Texture = shared_texStatsAvgColorTemp; };
-	float AverageColorTemp() { return tex2Dfetch(shared_SamplerStatsAvgColorTemp, int4(0, 0, 0, 0)).rgb; }
+	float AverageColorTemp() { return tex2Dfetch(shared_SamplerStatsAvgColorTemp, int4(0, 0, 0, 0)).r; }
 }
