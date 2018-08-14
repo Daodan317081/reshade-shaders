@@ -176,7 +176,7 @@ float3 AdaptiveTint_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : 
 	Generate small image for shader debug/setup
 *******************************************************/
 
-float3 CANVAS_DRAW_SHADER(AdaptiveTintDebug) {
+CANVAS_DRAW_BEGIN(AdaptiveTintDebug, 0.0.rrr;);
 	float3 originalBackBuffer = Stats::OriginalBackBuffer(texcoord);
 	float3 originalLuma = dot(originalBackBuffer, LumaCoeff).xxx;
 	float avgLuma = Stats::AverageLuma();
@@ -191,8 +191,7 @@ float3 CANVAS_DRAW_SHADER(AdaptiveTintDebug) {
 	CANVAS_DRAW_BOX(AdaptiveTintDebug, avgColor, int2(0, 0), int2(10, 10));
     CANVAS_DRAW_CURVE_XY(AdaptiveTintDebug, RED, curves.y);
     CANVAS_DRAW_CURVE_XY(AdaptiveTintDebug, CYAN, curves.x);
-    CANVAS_FINALIZE(AdaptiveTintDebug);
-}
+CANVAS_DRAW_END(AdaptiveTintDebug);
 
 technique AdaptiveTint
 {

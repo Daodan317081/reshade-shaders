@@ -131,13 +131,13 @@ namespace Canvas {
 /*******************************************************
 	For drawing
 *******************************************************/
-#define CANVAS_DRAW_SHADER(ref) CANVAS_DRAW_SHADER_NAME(ref)(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
-#define CANVAS_SET_BACKGROUND(ref, color) float3 ref = color
-#define CANVAS_DRAW_CURVE_XY(ref, color, func) ref = Canvas::DrawCurve(ref, color, float2(texcoord.x, func), float2(texcoord.x, 1.0 - texcoord.y), 0.002)
-#define CANVAS_DRAW_CURVE_YX(ref, color, func) ref = Canvas::DrawCurve(ref, color, float2(func, texcoord.y), texcoord, 0.002)
-#define CANVAS_DRAW_SCALE(ref, color_begin, color_end, pos, size, value, color_marker) ref = Canvas::DrawScale(ref, color_begin, color_end, pos, size, value, color_marker, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(ref), 0.002)
-#define CANVAS_DRAW_BOX(ref, color, pos, size) ref = Canvas::DrawBox(ref, color, pos, size, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(ref))
-#define CANVAS_FINALIZE(ref) return ref
+#define CANVAS_DRAW_BEGIN(ref, background)                                              float3 CANVAS_DRAW_SHADER_NAME(ref)(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target { float3 ref = background;
+#define CANVAS_DRAW_BACKGROUND(ref, background)                                         ref = background;
+#define CANVAS_DRAW_CURVE_XY(ref, color, func)                                          ref = Canvas::DrawCurve(ref, color, float2(texcoord.x, func), float2(texcoord.x, /*flip coordinate*/ 1.0 - texcoord.y), 0.002);
+#define CANVAS_DRAW_CURVE_YX(ref, color, func)                                          ref = Canvas::DrawCurve(ref, color, float2(func, texcoord.y), float2(texcoord.x, texcoord.y), 0.002);
+#define CANVAS_DRAW_SCALE(ref, color_begin, color_end, pos, size, value, color_marker)  ref = Canvas::DrawScale(ref, color_begin, color_end, pos, size, value, color_marker, float2(texcoord.x, /*flip coordinate*/ 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(ref), 0.002);
+#define CANVAS_DRAW_BOX(ref, color, pos, size)                                          ref = Canvas::DrawBox(ref, color, pos, size, float2(texcoord.x, 1.0 - texcoord.y), CANVAS_SAMPLER_NAME(ref));
+#define CANVAS_DRAW_END(ref)                                                            return ref; }
 
 /*******************************************************
 	Add technique to show canvas
