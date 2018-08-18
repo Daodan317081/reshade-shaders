@@ -11,7 +11,7 @@
 uniform float3 fUITargetHue<
     ui_type = "color";
     ui_label = "Target Hue";
-    ui_tooltip = "Use the vertical slider from the color-control\nto select the hue that should be isolated.\nSaturation and value are ignored.";
+    ui_tooltip = "Use the vertical slider from the color-control\nto select the hue that should be isolated.\nOr right-click and set input to HSV.\nSaturation and value are ignored.";
 > = float3(1.0, 0.0, 0.0);
 
 uniform float fUIGaussianWidth<
@@ -127,7 +127,6 @@ technique ColorIsolation {
         PixelShader = ColorIsolationPS;
         /* RenderTarget = BackBuffer */
     }
-}   }
 }
 
 #ifdef COLORISOLATION_DEBUG
