@@ -1,8 +1,8 @@
 #include "ReShade.fxh"
 
-uniform float3 fUITargetColor<
+uniform float3 fUITargetHue<
     ui_type = "color";
-    ui_label = "Tareget Hue";
+    ui_label = "Target Hue";
     ui_tooltip = "Use the vertical slider from the color-control\nto select the hue that should be isolated.\nSaturation and value are ignored.";
 > = float3(1.0, 0.0, 0.0);
 
@@ -93,7 +93,7 @@ float CalculateValue(float x, float b, float c) {
 float3 ColorIsolationPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
     float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
     float3 luma = dot(color, float3(0.2126, 0.7151, 0.0721)).rrr;
-    float value = CalculateValue(RGBtoHSV(color).x, RGBtoHSV(fUITargetColor).x, fUIGaussianWidth);
+    float value = CalculateValue(RGBtoHSV(color).x, RGBtoHSV(fUITargetHue).x, fUIGaussianWidth);
     if(bUIShowDiff)
         return value.rrr;
     return lerp(luma, color, value);
