@@ -185,7 +185,7 @@ CANVAS_DRAW_BEGIN(AdaptiveTintDebug, 0.0.rrr;);
 	float2 levels = CalculateLevels(avgLuma);
 	float3 localFactor = saturate(Tools::Functions::Level(originalLuma.r, levels.x, levels.y).rrr);
 
-    CANVAS_SET_BACKGROUND(AdaptiveTintDebug, localFactor);
+    CANVAS_DRAW_BACKGROUND(AdaptiveTintDebug, localFactor);
 	CANVAS_DRAW_SCALE(AdaptiveTintDebug, RED, BLUE, int2(0, 10), int2(10, BUFFER_HEIGHT/4-10), GetColorTemp(texcoord), BLACK);
 	CANVAS_DRAW_SCALE(AdaptiveTintDebug, BLACK, WHITE, int2(10, 0), int2(BUFFER_WIDTH/4-10, 10), avgLuma, MAGENTA);
 	CANVAS_DRAW_BOX(AdaptiveTintDebug, avgColor, int2(0, 0), int2(10, 10));
