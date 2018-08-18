@@ -1,3 +1,8 @@
+/*******************************************************
+	ReShade Shader: ColorIsolation
+	https://github.com/Daodan317081/reshade-shaders
+*******************************************************/
+
 #include "ReShade.fxh"
 
 uniform float3 fUITargetHue<
