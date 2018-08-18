@@ -180,8 +180,8 @@ uniform float2 Chirp<
     ui_type = "drag";
     ui_label = "Chirp";
     ui_min = 0.0; ui_max = 100.0;
-    ui_step = 0.01;
-> = float2(1.0, 10);
+    ui_step = 0.1;
+> = float2(0.0, 2.0);
 
 uniform float Value<
     ui_type = "drag";
@@ -190,31 +190,32 @@ uniform float Value<
     ui_step = 0.001;
 > = 0.25;
 
-//Set up canvas
-//The origin of the coordinate system is on the bottom left
-//x-axis increases to the right
-//y-axis increases to the top
-CANVAS_SETUP(TestCanvas, BUFFER_WIDTH/2, BUFFER_HEIGHT/2)
+uniform int4 BoxPosSize<
+    ui_type = "drag";
+    ui_label = "Box Pos / Size";
+    ui_min = 0; ui_max = BUFFER_WIDTH;
+    ui_step = 1;
+> = int4(20, 20, 300, 150);
 
-float3 CANVAS_DRAW_SHADER(TestCanvas) {
-    //Use BackBuffer as background
-    CANVAS_SET_BACKGROUND(TestCanvas, tex2D(ReShade::BackBuffer, texcoord).rgb);
+//Set up canvas
+CANVAS_SETUP(TestCanvas, BUFFER_WIDTH/2, BUFFER_HEIGHT/2)
+//Start drawing
+CANVAS_DRAW_BEGIN(TestCanvas, tex2D(ReShade::BackBuffer, texcoord).rgb)
     //Draw lines in the middle
-    CANVAS_DRAW_CURVE_XY(TestCanvas, 0.3.rrr, 0.5);
-    CANVAS_DRAW_CURVE_YX(TestCanvas, 0.3.rrr, 0.5);
-    //Draw a box
-    CANVAS_DRAW_BOX(TestCanvas, float3(0.0, 1.0, 1.0), int2(0, 0), int2(10, 10));
+    CANVAS_DRAW_CURVE_XY(TestCanvas, texcoord.x, 0.5)
+    CANVAS_DRAW_CURVE_YX(TestCanvas, texcoord.y, 0.5)
     //Draw scales (whether the marker runs horizontal or vertical is based on the size of the scale (aspect ratio))
-    CANVAS_DRAW_SCALE(TestCanvas, 0.7.rrr, 0.3.rrr, int2(0, 11), int2(10, BUFFER_HEIGHT/2 - 10), Value, float3(0.0, 1.0, 0.0));
-    CANVAS_DRAW_SCALE(TestCanvas, 0.0.rrr, 1.0.rrr, int2(11, 0), int2(BUFFER_WIDTH/2 - 10, 10), Value, float3(1.0, 0.0, 1.0));
+    CANVAS_DRAW_SCALE(TestCanvas, 0.7.rrr, 0.3.rrr, int2(0, 11), int2(10, BUFFER_HEIGHT/2 - 10), Value, float3(0.0, 1.0, 0.0))
+    CANVAS_DRAW_SCALE(TestCanvas, 0.0.rrr, 1.0.rrr, int2(11, 0), int2(BUFFER_WIDTH/2 - 10, 10), Value, float3(1.0, 0.0, 1.0))
     //Draw a sine
-    CANVAS_DRAW_CURVE_XY(TestCanvas, float3(1.0, 0.0, 0.0), SineAmplitude * sin(SineFreq * 2 * 3.14 * texcoord.x) * 0.5 + 0.5);
+    CANVAS_DRAW_CURVE_XY(TestCanvas, float3(1.0, 0.0, 0.0), SineAmplitude * sin(SineFreq * 2 * 3.14 * texcoord.x) * 0.5 + 0.5)
     //Draw Chirp
     float k = (Chirp.y - Chirp.x);
-    CANVAS_DRAW_CURVE_XY(TestCanvas, float3(1.0, 1.0, 0.0), sin(2 * 3.14 * (Chirp.x * texcoord.x + (k / 2.0) * texcoord.x * texcoord.x)) * 0.5 + 0.5);
-    //return
-    CANVAS_FINALIZE(TestCanvas);
-}
+    CANVAS_DRAW_CURVE_XY(TestCanvas, float3(1.0, 1.0, 0.0), sin(2 * 3.14 * (Chirp.x * texcoord.x + (k / 2.0) * texcoord.x * texcoord.x)) * 0.5 + 0.5)
+    //Draw a box
+    CANVAS_DRAW_BOX(TestCanvas, float3(0.0, 1.0, 1.0), BoxPosSize.xy, BoxPosSize.zw)
+//end
+CANVAS_DRAW_END(TestCanvas)
 
 //Pixelshader that does nothing
 float3 CanvasPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
