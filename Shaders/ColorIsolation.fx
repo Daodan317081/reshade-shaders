@@ -16,7 +16,7 @@ uniform float3 fUITargetHue<
 
 uniform float fUIGaussianWidth<
     ui_type = "drag";
-    ui_label = "Gaussian Width";
+    ui_label = "Hue Overlap";
     ui_tooltip = "Changes the width of the gaussian curve\nto include less or more colors in relation\nto the target hue.\n";
     ui_min = 0.001; ui_max = 1.0;
     ui_step = 0.001;
