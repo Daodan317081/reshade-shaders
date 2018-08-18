@@ -180,7 +180,7 @@ namespace Tools {
         }
 
         float3 HSVtoRGB(float3 color) {
-            float H = color.x;
+            float H = color.x * 360.0;
             float S = color.y;
             float V = color.z;
 
@@ -205,7 +205,6 @@ namespace Tools {
                 return float3(t,p,V);
             else //if(hi == 5)
                 return float3(V,p,q);
-
         }
 
         float GetSaturation(float3 color) {
