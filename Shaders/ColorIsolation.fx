@@ -14,6 +14,10 @@ uniform float fUIGaussianWidth<
     ui_step = 0.001;
 > = 0.03;
 
+uniform bool bUIShowDiff<
+    ui_label = "Show Hue Difference";
+> = false;
+
 float3 RGBtoHSV(float3 color) {
     float H, S, V, maxVal, minVal, delta;
     maxVal = max(color.r, max(color.g, color.b));
@@ -90,6 +94,8 @@ float3 ColorIsolationPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) :
     float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
     float3 luma = dot(color, float3(0.2126, 0.7151, 0.0721)).rrr;
     float value = CalculateValue(RGBtoHSV(color).x, RGBtoHSV(fUITargetColor).x, fUIGaussianWidth);
+    if(bUIShowDiff)
+        return value.rrr;
     return lerp(luma, color, value);
 }
 
