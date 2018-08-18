@@ -4,6 +4,9 @@
 *******************************************************/
 
 #include "ReShade.fxh"
+#ifdef COLORISOLATION_DEBUG
+#include "Canvas.fxh"
+#endif
 
 uniform float3 fUITargetHue<
     ui_type = "color";
@@ -22,6 +25,10 @@ uniform float fUIGaussianWidth<
 uniform bool bUIShowDiff<
     ui_label = "Show Hue Difference";
 > = false;
+
+#ifdef COLORISOLATION_DEBUG
+CANVAS_SETUP(ColorIsolationDebug, BUFFER_WIDTH/2, BUFFER_HEIGHT/6);
+#endif
 
 float3 RGBtoHSV(float3 color) {
     float H, S, V, maxVal, minVal, delta;
@@ -104,10 +111,25 @@ float3 ColorIsolationPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) :
     return lerp(luma, color, value);
 }
 
+#ifdef COLORISOLATION_DEBUG
+CANVAS_DRAW_BEGIN(ColorIsolationDebug, 1.0.rrr)
+    float value = CalculateValue(texcoord.x, RGBtoHSV(fUITargetHue).x, fUIGaussianWidth);
+    float3 hsvStrip = HSVtoRGB(float3(texcoord.x, 1.0, 1.0));
+    float3 luma = dot(hsvStrip, float3(0.2126, 0.7151, 0.0721));
+    CANVAS_DRAW_BACKGROUND(ColorIsolationDebug, lerp(luma, hsvStrip, value));
+    CANVAS_DRAW_CURVE_XY(ColorIsolationDebug, 0.0.rrr, value);
+CANVAS_DRAW_END(ColorIsolationDebug)
+#endif
+
 technique ColorIsolation {
     pass {
         VertexShader = PostProcessVS;
         PixelShader = ColorIsolationPS;
         /* RenderTarget = BackBuffer */
     }
+}   }
 }
+
+#ifdef COLORISOLATION_DEBUG
+    CANVAS_TECHNIQUE(ColorIsolationDebug)
+#endif
