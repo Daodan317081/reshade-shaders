@@ -35,6 +35,12 @@ uniform float fUIWindowHeight<
     ui_step = 0.01;
 > = 1.0;
 
+uniform int cUIType<
+    ui_type = "combo";
+    ui_label = "Isolate / Reject Hue";
+    ui_items = "Isolate\0Reject\0";
+> = 0;
+
 uniform bool bUIShowDiff<
     ui_label = "Show Hue Difference";
 > = false;
@@ -113,16 +119,22 @@ float3 HSVtoRGB(float3 color) {
 #define TRIANGLE(x,height,offset,overlap) saturate(height * ((2 / overlap) * ((overlap / 2) - abs(x - offset))))
 
 float CalculateValue(float x, float height, float offset, float overlap) {
+    float retVal;
     //Add three curves together, two of them are moved by 1.0 to the left and to the right respectively
     //in order to account for the borders at 0.0 and 1.0
     if(cUIWindowFunction == 0) {
         //Scale overlap so the gaussian has roughly the same span as the triangle
         overlap /= 5.0;
-        return saturate(GAUSS(x-1.0, height, offset, overlap) + GAUSS(x, height, offset, overlap) + GAUSS(x+1.0, height, offset, overlap));
+        retVal = saturate(GAUSS(x-1.0, height, offset, overlap) + GAUSS(x, height, offset, overlap) + GAUSS(x+1.0, height, offset, overlap));
     }
     else {
-        return saturate(TRIANGLE(x-1.0, height, offset, overlap) + TRIANGLE(x, height, offset, overlap) + TRIANGLE(x+1.0, height, offset, overlap));
+        retVal = saturate(TRIANGLE(x-1.0, height, offset, overlap) + TRIANGLE(x, height, offset, overlap) + TRIANGLE(x+1.0, height, offset, overlap));
     }
+    
+    if(cUIType == 1)
+        return 1.0 - retVal;
+    
+    return retVal;
 }
 
 float3 ColorIsolationPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
