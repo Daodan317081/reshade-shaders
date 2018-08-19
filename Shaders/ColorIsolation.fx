@@ -125,70 +125,22 @@ float3 DrawTexture(float3 image, sampler overlay, float2 texcoord, int2 offset, 
     return lerp(image, col, fac);
 }
 
-float3 RGBtoHSV(float3 color) {
-    float H, S, V, maxVal, minVal, delta;
-    maxVal = max(color.r, max(color.g, color.b));
-    minVal = min(color.r, min(color.g, color.b));
+//These RGB/HSV conversion functions are based on the blogpost from:
+//http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
+float3 RGBtoHSV(float3 c) {
+    float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    float4 p = c.g < c.b ? float4(c.bg, K.wz) : float4(c.gb, K.xy);
+    float4 q = c.r < p.x ? float4(p.xyw, c.r) : float4(c.r, p.yzx);
 
-    V = maxVal;
-
-    delta = maxVal - minVal;
-    if(delta < 1.0e-10) {
-        S = 0.0;
-        H = 0.0;
-        return float3(H, S, V);	
-    }
-
-    if(maxVal > 0.0) {
-        S = delta / maxVal;
-    }
-    else {
-        S = 0.0;
-        H = 0.0;
-        return float3(H, S, V);
-    }
-
-    if(color.r >= maxVal)
-        H = (color.g - color.b) / delta;
-    else if(color.g >= maxVal)
-        H = 2.0 + (color.b - color.r) / delta;
-    else
-        H = 4.0 + (color.r - color.g) / delta;
-
-    H *= 60.0;
-
-    if(H < 0.0)
-        H += 360.0;
-
-    return saturate(float3(H / 360.0, S, V));
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
 
-float3 HSVtoRGB(float3 color) {
-    float H = color.x * 360.0;
-    float S = color.y;
-    float V = color.z;
-
-    float hi = floor(abs(H / 60.0));
-    float f = H / 60.0 - hi;
-    float p = V * (1.0 - S);
-    float q = V * (1.0 - S * f);
-    float t = V * (1.0 - S * (1.0 - f));
-
-    if(S < 1.0e-10)
-        return float3(V,V,V);
-
-    if(hi == 0 || hi == 6)
-        return float3(V,t,p);
-    else if(hi == 1)
-        return float3(q,V,p);
-    else if(hi == 2)
-        return float3(p,V,t);
-    else if(hi == 3)
-        return float3(p,q,V);
-    else if(hi == 4)
-        return float3(t,p,V);
-    else //if(hi == 5)
-        return float3(V,p,q);
+float3 HSVtoRGB(float3 c) {
+    float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
 #define GAUSS(x,height,offset,overlap) (height * exp(-((x - offset) * (x - offset)) / (2 * overlap * overlap)))
