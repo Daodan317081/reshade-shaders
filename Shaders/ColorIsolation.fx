@@ -14,13 +14,26 @@ uniform float3 fUITargetHue<
     ui_tooltip = "Use the vertical slider from the color-control\nto select the hue that should be isolated.\nOr right-click and set input to HSV.\nSaturation and value are ignored.";
 > = float3(1.0, 0.0, 0.0);
 
-uniform float fUIGaussianWidth<
+uniform int cUIWindowFunction<
+    ui_type = "combo";
+    ui_label = "Window Function";
+    ui_items = "Gauss\0Triangle\0";
+> = 0;
+
+uniform float fUIOverlap<
     ui_type = "drag";
     ui_label = "Hue Overlap";
     ui_tooltip = "Changes the width of the gaussian curve\nto include less or more colors in relation\nto the target hue.\n";
-    ui_min = 0.001; ui_max = 1.0;
+    ui_min = 0.001; ui_max = 2.0;
     ui_step = 0.001;
-> = 0.03;
+> = 0.3;
+
+uniform float fUIWindowHeight<
+    ui_type = "drag";
+    ui_label = "Curve Steepness";
+    ui_min = 0.0; ui_max = 10.0;
+    ui_step = 0.01;
+> = 1.0;
 
 uniform bool bUIShowDiff<
     ui_label = "Show Hue Difference";
@@ -96,16 +109,26 @@ float3 HSVtoRGB(float3 color) {
         return float3(V,p,q);
 }
 
-float CalculateValue(float x, float b, float c) {
-    //Add three gaussians together, two of them are moved by 1.0 to the left and to the right respectively
+#define GAUSS(x,height,offset,overlap) (height * exp(-((x - offset) * (x - offset)) / (2 * overlap * overlap)))
+#define TRIANGLE(x,height,offset,overlap) saturate(height * ((2 / overlap) * ((overlap / 2) - abs(x - offset))))
+
+float CalculateValue(float x, float height, float offset, float overlap) {
+    //Add three curves together, two of them are moved by 1.0 to the left and to the right respectively
     //in order to account for the borders at 0.0 and 1.0
-    return exp(-((x-b+1.0)*(x-b+1.0)) / (2 * c * c)) + exp(-((x-b)*(x-b)) / (2 * c * c)) + exp(-((x-b-1.0)*(x-b-1.0)) / (2 * c * c));
+    if(cUIWindowFunction == 0) {
+        //Scale overlap so the gaussian has roughly the same span as the triangle
+        overlap /= 5.0;
+        return saturate(GAUSS(x-1.0, height, offset, overlap) + GAUSS(x, height, offset, overlap) + GAUSS(x+1.0, height, offset, overlap));
+    }
+    else {
+        return saturate(TRIANGLE(x-1.0, height, offset, overlap) + TRIANGLE(x, height, offset, overlap) + TRIANGLE(x+1.0, height, offset, overlap));
+    }
 }
 
 float3 ColorIsolationPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
     float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
     float3 luma = dot(color, float3(0.2126, 0.7151, 0.0721)).rrr;
-    float value = CalculateValue(RGBtoHSV(color).x, RGBtoHSV(fUITargetHue).x, fUIGaussianWidth);
+    float value = CalculateValue(RGBtoHSV(color).x, fUIWindowHeight, RGBtoHSV(fUITargetHue).x, fUIOverlap);
     if(bUIShowDiff)
         return value.rrr;
     return lerp(luma, color, value);
@@ -113,7 +136,7 @@ float3 ColorIsolationPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) :
 
 #ifdef COLORISOLATION_DEBUG
 CANVAS_DRAW_BEGIN(ColorIsolationDebug, 1.0.rrr)
-    float value = CalculateValue(texcoord.x, RGBtoHSV(fUITargetHue).x, fUIGaussianWidth);
+    float value = CalculateValue(texcoord.x, fUIWindowHeight, RGBtoHSV(fUITargetHue).x, fUIOverlap);
     float3 hsvStrip = HSVtoRGB(float3(texcoord.x, 1.0, 1.0));
     float3 luma = dot(hsvStrip, float3(0.2126, 0.7151, 0.0721));
     CANVAS_DRAW_BACKGROUND(ColorIsolationDebug, lerp(luma, hsvStrip, value));
