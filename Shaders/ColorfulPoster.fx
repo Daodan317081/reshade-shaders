@@ -4,11 +4,9 @@
 *******************************************************/
 
 #include "ReShade.fxh"
-#include "Tools.fxh"
 
 #define UI_CATEGORY_POSTERIZATION "Posterization"
-#define UI_CATEGORY_OUTLINES "Outlines (needs depth buffer)"
-#define UI_CATEGORY_EDGES "Edge Detection Weight"
+#define UI_CATEGORY_PENCIL "Pencil Layer"
 #define UI_CATEGORY_COLOR "Color"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
@@ -57,36 +55,28 @@ uniform bool iUIDebugOverlayPosterizeLevels <
 
 ////////////////////////// Pencil Layer //////////////////////////
 
-//Outlines
-uniform int iUIOutlinesFading <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_OUTLINES;
-	ui_label = "Fading";
-	ui_tooltip = "Outlines fade with increasing distance (or inverse)";
-	ui_items = "No\0Decrease\0Increase\0";
-> = 0;
-
-uniform float fUIOutlinesStrength <
+uniform float3 fUIDepthOutlines <
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_OUTLINES;
-	ui_label = "Strength";
+	ui_category = UI_CATEGORY_PENCIL;
+	ui_label = "Depth Outlines";
+	ui_tooltip = "x:Strength\ny:Fade Out Start\nz:Fade Out End";
+	ui_min = 0.0; ui_max = 1.0;
+> = float3(1.0, 0.0, 1.0);
+
+//Edge Detection
+uniform float fUILumaEdges <
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_PENCIL;
+	ui_label = "Luma Edges Strength";
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
-//Edge Detection
-uniform float2 fUILumaEdgesStrength <
+uniform float fUIChromaEdges <
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_EDGES;
-	ui_label = "Luma";
+	ui_category = UI_CATEGORY_PENCIL;
+	ui_label = "Chroma Edges Strength";
 	ui_min = 0.0; ui_max = 1.0;
-> = float2(1.0, 1.0);
-
-uniform float2 fUIChromaEdgesStrength <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_EDGES;
-	ui_label = "Chroma (Normalize/Strength)";
-	ui_min = 0.0; ui_max = 2.0;
-> = float2(0.0, 1.0);
+> = 1.0;
 
 ////////////////////////// Color //////////////////////////
 
@@ -134,48 +124,61 @@ sampler2D SamplerColorfulPosterLuma { Texture = texColorfulPosterLuma; };
 	Functions
 ******************************************************************************/
 
-float CalculateEdges(sampler s, int2 vpos, int type) {
+#define MAX_VALUE(v) max(v.x, max(v.y, v.z))
+
+float DiffEdges(sampler s, int2 vpos) {
+	static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
 	float valC = dot(tex2Dfetch(s, int4(vpos, 0, 0)).rgb, LumaCoeff);
-	float4 val1 = float4(	dot(tex2Dfetch(s, int4(vpos + int2( 0, -1), 0, 0)).rgb, LumaCoeff),//N
-							dot(tex2Dfetch(s, int4(vpos + int2( 1, -1), 0, 0)).rgb, LumaCoeff),//NE
-							dot(tex2Dfetch(s, int4(vpos + int2( 1,  0), 0, 0)).rgb, LumaCoeff),//E
-							dot(tex2Dfetch(s, int4(vpos + int2( 1,  1), 0, 0)).rgb, LumaCoeff));//SE
-	float4 val2 = float4(	dot(tex2Dfetch(s, int4(vpos + int2( 0,  1), 0, 0)).rgb, LumaCoeff),//S
-							dot(tex2Dfetch(s, int4(vpos + int2(-1,  1), 0, 0)).rgb, LumaCoeff),//SW
-							dot(tex2Dfetch(s, int4(vpos + int2(-1,  0), 0, 0)).rgb, LumaCoeff),//W
-							dot(tex2Dfetch(s, int4(vpos + int2(-1, -1), 0, 0)).rgb, LumaCoeff));//NW
+	float4 val1 = float4(	
+		dot(tex2Dfetch(s, int4(vpos + int2( 0, -1), 0, 0)).rgb, LumaCoeff),//N
+		dot(tex2Dfetch(s, int4(vpos + int2( 1, -1), 0, 0)).rgb, LumaCoeff),//NE
+		dot(tex2Dfetch(s, int4(vpos + int2( 1,  0), 0, 0)).rgb, LumaCoeff),//E
+		dot(tex2Dfetch(s, int4(vpos + int2( 1,  1), 0, 0)).rgb, LumaCoeff)//SE
+		);
+	float4 val2 = float4(	
+		dot(tex2Dfetch(s, int4(vpos + int2( 0,  1), 0, 0)).rgb, LumaCoeff),//S
+		dot(tex2Dfetch(s, int4(vpos + int2(-1,  1), 0, 0)).rgb, LumaCoeff),//SW
+		dot(tex2Dfetch(s, int4(vpos + int2(-1,  0), 0, 0)).rgb, LumaCoeff),//W
+		dot(tex2Dfetch(s, int4(vpos + int2(-1, -1), 0, 0)).rgb, LumaCoeff)//NW
+		);
 
 	float4 diffs = abs(val1 - val2);
-	if(type == 0) {
-		return saturate((diffs.x + diffs.y + diffs.z + diffs.w) * (1.0 - valC));
-	}
-	else {
-		return saturate((diffs.x + diffs.y + diffs.z + diffs.w) * dot(val1, val2));
-	}
+	return saturate((diffs.x + diffs.y + diffs.z + diffs.w) * (1.0 - valC));
 }
 
-float CalculateDepthBufferOutlines(float2 texcoord, int fading) {
-	float valC = ReShade::GetLinearizedDepth(texcoord);
-	float4 val1 = float4(	ReShade::GetLinearizedDepth(texcoord + float2(0.0, -ReShade::PixelSize.y)),
-							ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, -ReShade::PixelSize.y)),
-							ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, 0.0)),
-							ReShade::GetLinearizedDepth(texcoord + float2(ReShade::PixelSize.x, ReShade::PixelSize.y)));
-	float4 val2 = float4(	ReShade::GetLinearizedDepth(texcoord + float2(0.0, ReShade::PixelSize.y)),
-							ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, ReShade::PixelSize.y)),
-							ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, 0.0)),
-							ReShade::GetLinearizedDepth(texcoord + float2(-ReShade::PixelSize.x, -ReShade::PixelSize.y)));
+float ConvEdges(sampler s, int2 vpos) {
+	static const float sobelX[9] = { 1.0,  0.0, -1.0, 2.0, 0.0, -2.0, 1.0,  0.0, -1.0 };
+	static const float sobelY[9] = { 1.0,  2.0,  1.0, 0.0,  0.0,  0.0, -1.0, -2.0, -1.0 };
+	static const float sobelXM[9] = { -1.0,  0.0, 1.0, -2.0,  0.0, 2.0, -1.0,  0.0, 1.0 };
+	static const float sobelYM[9] = { -1.0, -2.0, -1.0, 0.0,  0.0,  0.0, 1.0,  2.0,  1.0 };
+	float4 acc = 0.0.rrrr;
 
-	float4 diffs = abs(val1 - val2);
-	float outline = diffs.x + diffs.y + diffs.z + diffs.w;
-
-	if(fading == 1)
-		outline *= (1.0 - valC);
-	else if(fading == 2)
-		outline *= valC;
-
-	return outline;
+	[unroll]
+	for(int m = 0; m < 3; m++) {
+		[unroll]
+		for(int n = 0; n < 3; n++) {
+			float3 pixel = tex2Dfetch(s, int4( (vpos.x - 1 + n), (vpos.y - 1 + m), 0, 0)).rgb;
+			pixel = MAX_VALUE(pixel);
+			acc += float4(sobelX[n + (m*3)], sobelY[n + (m*3)], sobelXM[n + (m*3)], sobelYM[n + (m*3)]) * pixel.x;
+		}
+	}
+	return max(acc.x, max(acc.y, max(acc.z, acc.w)));
 }
 
+float3 DepthEdges(float2 texcoord) {
+
+    float2 posCenter = texcoord.xy;
+    float2 posNorth = posCenter + float2(0.0, -ReShade::PixelSize.y);
+    float2 posEast = posCenter + float2(ReShade::PixelSize.x, 0.0);
+
+    float3 vertCenter = float3(posCenter, ReShade::GetLinearizedDepth(posCenter));
+    float3 vertNorth = float3(posNorth, ReShade::GetLinearizedDepth(posNorth));
+    float3 vertEast = float3(posEast, ReShade::GetLinearizedDepth(posEast));
+
+    float3 normalLayer = cross(normalize(vertCenter - vertNorth), normalize(vertCenter - vertEast));
+
+    return 1.0 - saturate(dot(float3(0.0, 0.0, 1.0), normalLayer).rrr);
+}
 
 float Posterize(float x, int numLevels, float continuity, float slope, int type) {
 	float stepheight = 1.0 / numLevels;
@@ -212,14 +215,14 @@ float3 CMYKtoRGB(float4 cmyk) {
 
 //Convolution gets currently done with samplers, so rendering to a texture is necessary
 void Chroma_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord, out float3 chroma : SV_Target0, out float3 luma : SV_Target1) {
+	static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
 	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
 	luma = dot(color, LumaCoeff);
 	chroma = color - luma;
-	chroma = lerp(chroma, normalize(chroma), fUIChromaEdgesStrength.x);
 }
 
 float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
-	
+	static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
 	/*******************************************************
 		Get BackBuffer
 	*******************************************************/
@@ -255,15 +258,12 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	/*******************************************************
 		Create PencilLayer
 	*******************************************************/
-	//float3 outlinesDepthBuffer = Tools::Functions::GetDepthBufferOutlines(texcoord, iUIOutlinesFading) * fUIOutlinesStrength.rrr;
-	float3 outlinesDepthBuffer = CalculateDepthBufferOutlines(texcoord, iUIOutlinesFading) * fUIOutlinesStrength.rrr;
-	float3 lumaEdges = CalculateEdges(SamplerColorfulPosterLuma, vpos.xy, 0).rrr * fUILumaEdgesStrength.x;
-	float3 lumaEdges2 = CalculateEdges(SamplerColorfulPosterLuma, vpos.xy, 1).rrr * fUILumaEdgesStrength.y;
-	lumaEdges = max(lumaEdges, lumaEdges2);
-	//float3 chromaEdges = CalculateEdges(SamplerColorfulPosterChroma, vpos.xy, 0).rrr * fUIChromaEdgesStrength.y;
-	float3 chromaEdges = Tools::Convolution::Edges(SamplerColorfulPosterChroma, vpos.xy, CONV_SOBEL_FULL, CONV_MAX).rrr * fUIChromaEdgesStrength.y;
+	float currentDepth = ReShade::GetLinearizedDepth(texcoord);
+	float3 outlinesDepthBuffer = DepthEdges(texcoord).rrr * (currentDepth < fUIDepthOutlines.z ? (currentDepth > fUIDepthOutlines.y ? 1.0 : 0.0 ) : 0.0) * fUIDepthOutlines.x;
+	float3 lumaEdges = DiffEdges(SamplerColorfulPosterLuma, vpos.xy).rrr * fUILumaEdges;
+	float3 chromaEdges = ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr * fUIChromaEdges;
 
-	float3 pencilLayer = saturate(outlinesDepthBuffer + lumaEdges + chromaEdges);
+	float3 pencilLayer = max(outlinesDepthBuffer, max(lumaEdges, chromaEdges));
 
 	/*******************************************************
 		Create result
@@ -289,8 +289,8 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		return tex2D(SamplerColorfulPosterChroma, texcoord).rgb;
 
 	if(iUIDebugOverlayPosterizeLevels == 1) {
-		result = lerp(result, float3(1.0, 0.0, 1.0), saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - Tools::Functions::Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType))))));
-		backbuffer = lerp(backbuffer, float3(1.0, 0.0, 1.0), saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - Tools::Functions::Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType))))));
+		result = lerp(result, float3(1.0, 0.0, 1.0), saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType))))));
+		backbuffer = lerp(backbuffer, float3(1.0, 0.0, 1.0), saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType))))));
 	}
 
 	/*******************************************************
