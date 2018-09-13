@@ -273,7 +273,9 @@ float3 CMYKtoRGB(float4 cmyk) {
 }
 
 float DepthFade(float3 fade, float depth) {
-	return smoothstep(0.0, 1.0 - fade.z, depth + (0.2 - 1.2 * fade.x)) * smoothstep(0.0, 1.0 - fade.z, 1.0 - depth + (1.2 * fade.y - 1.0));
+	float curveMin = smoothstep(0.0, 1.0 - fade.z, depth + (0.2 - 1.2 * fade.x));
+	float curveMax = smoothstep(0.0, 1.0 - fade.z, 1.0 - depth + (1.2 * fade.y - 1.0));
+	return curveMin * curveMax;
 }
 
 /******************************************************************************
@@ -325,10 +327,14 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	/*******************************************************
 		Create PencilLayer
 	*******************************************************/
-	float currentDepth = ReShade::GetLinearizedDepth(texcoord);
-	float3 outlinesDepthBuffer = DepthEdges(texcoord, fUIDepthBias).rrr * fUIDepthOutlinesStrength * DepthFade(fUIDepthOutlinesFading, currentDepth);
-	float3 lumaEdges = DiffEdges(SamplerColorfulPosterLuma, vpos.xy).rrr * fUILumaEdges * DepthFade(fUIEdgesFading, currentDepth);
-	float3 chromaEdges = ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr * fUIChromaEdges * DepthFade(fUIEdgesFading, currentDepth);
+	float currentDepth 			= ReShade::GetLinearizedDepth(texcoord);
+	float3 outlinesDepthBuffer 	= DepthEdges(texcoord, fUIDepthBias).rrr;
+	float3 lumaEdges 			= DiffEdges(SamplerColorfulPosterLuma, vpos.xy).rrr;
+	float3 chromaEdges 			= ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr;
+	
+	outlinesDepthBuffer *= fUIDepthOutlinesStrength * DepthFade(fUIDepthOutlinesFading, currentDepth);
+	lumaEdges 			*= fUILumaEdges 			* DepthFade(fUIEdgesFading, currentDepth);
+	chromaEdges 		*= fUIChromaEdges 			* DepthFade(fUIEdgesFading, currentDepth);
 
 	float3 pencilLayer = max(outlinesDepthBuffer, max(lumaEdges, chromaEdges));
 
@@ -356,27 +362,22 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		return tex2D(SamplerColorfulPosterChroma, texcoord).rgb;
 
 	if(iUIDebugOverlayPosterizeLevels == 1) {
-		result = lerp(result, float3(1.0, 0.0, 1.0),
-					  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)))))
-					 );
-		backbuffer = lerp(backbuffer, float3(1.0, 0.0, 1.0),
-						  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)))))
-						 );
+		float coord = Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType);
+		float value = exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - coord)));
+		result = lerp(result, float3(1.0, 0.0, 1.0), saturate(value));
+		backbuffer = lerp(backbuffer, float3(1.0, 0.0, 1.0), saturate(value));
 	}
 
 	if(bUIOverlayFadingCurve == 1) {
-		result = lerp(result, float3(0.0, 0.0, 1.0),
-					  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - DepthFade(fUIEdgesFading, texcoord.x)))))
-					 );
-		backbuffer = lerp(backbuffer, float3(0.0, 0.0, 1.0),
-						  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - DepthFade(fUIEdgesFading, texcoord.x)))))
-						 );
-		result = lerp(result, float3(1.0, 0.0, 0.0),
-					  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - DepthFade(fUIDepthOutlinesFading, texcoord.x)))))
-					 );
-		backbuffer = lerp(backbuffer, float3(1.0, 0.0, 0.0),
-						  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - DepthFade(fUIDepthOutlinesFading, texcoord.x)))))
-						 );
+		float coord = DepthFade(fUIEdgesFading, texcoord.x);
+		float value = exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - coord)));
+		result = lerp(result, float3(0.0, 0.0, 1.0), saturate(value));
+		backbuffer = lerp(backbuffer, float3(0.0, 0.0, 1.0), saturate(value));
+
+		coord = DepthFade(fUIDepthOutlinesFading, texcoord.x);
+		value = exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - coord)));
+		result = lerp(result, float3(1.0, 0.0, 0.0), saturate(value));
+		backbuffer = lerp(backbuffer, float3(1.0, 0.0, 0.0), saturate(value));
 	}
 		
 	/*******************************************************
