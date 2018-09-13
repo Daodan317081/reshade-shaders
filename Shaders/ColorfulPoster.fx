@@ -52,7 +52,7 @@ uniform int iUILumaLevels <
 	ui_category = UI_CATEGORY_POSTERIZATION;
 	ui_label = "Luma Posterize Levels";
 	ui_min = 1; ui_max = 20;
-> = 8;
+> = 16;
 
 uniform int iUIStepType <
 	ui_type = "combo";
@@ -76,7 +76,7 @@ uniform float fUISlope <
 	ui_label = "Slope Logistic Curve";
 	ui_min = 0.0; ui_max = 40.0;
 	ui_step = 0.1;
-> = 10.0;
+> = 13.0;
 
 uniform bool iUIDebugOverlayPosterizeLevels <
 	ui_category = UI_CATEGORY_POSTERIZATION;
@@ -85,13 +85,29 @@ uniform bool iUIDebugOverlayPosterizeLevels <
 
 ////////////////////////// Pencil Layer //////////////////////////
 
-uniform float3 fUIDepthOutlines <
+uniform float fUIDepthOutlinesStrength <
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_PENCIL;
-	ui_label = "Depth Outlines";
-	ui_tooltip = "x:Strength\ny:Fade Out Start\nz:Fade Out End";
+	ui_label = "Depth Outlines Strength";
 	ui_min = 0.0; ui_max = 1.0;
-> = float3(1.0, 0.0, 1.0);
+> = 1.0;
+
+uniform float2 fUIDepthOutlinesFading<
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_PENCIL;
+	ui_label = "Depth Oulines Fading";
+	ui_tooltip = "x: Fade Out Start\ny: Fade Out End";
+	ui_min = 0.0; ui_max = 1.0;
+	ui_step = 0.001;
+> = float2(0.0, 1.0);
+
+uniform float2 fUIDepthBias<
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_PENCIL;
+	ui_label = "Depth Outlines Bias";
+	ui_min = 0.0; ui_max = 10.0;
+	ui_step = 0.01;
+> = float2(7.0, 2.9);
 
 //Edge Detection
 uniform float fUILumaEdges <
@@ -107,6 +123,15 @@ uniform float fUIChromaEdges <
 	ui_label = "Chroma Edges Strength";
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
+
+uniform float2 fUIEdgesFading<
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_PENCIL;
+	ui_label = "Edges Fading";
+	ui_tooltip = "x: Fade Out Start\ny: Fade Out End";
+	ui_min = 0.0; ui_max = 1.0;
+	ui_step = 0.001;
+> = float2(0.0, 1.0);
 
 ////////////////////////// Color //////////////////////////
 
@@ -195,19 +220,22 @@ float ConvEdges(sampler s, int2 vpos) {
 	return max(acc.x, max(acc.y, max(acc.z, acc.w)));
 }
 
-float3 DepthEdges(float2 texcoord) {
+float3 DepthEdges(float2 texcoord, float2 bias) {
 
+    float3 offset = float3(ReShade::PixelSize.xy, 0.0);
     float2 posCenter = texcoord.xy;
-    float2 posNorth = posCenter + float2(0.0, -ReShade::PixelSize.y);
-    float2 posEast = posCenter + float2(ReShade::PixelSize.x, 0.0);
+    float2 posNorth = posCenter - offset.zy;
+    float2 posEast = posCenter + offset.xz;
 
     float3 vertCenter = float3(posCenter, ReShade::GetLinearizedDepth(posCenter));
     float3 vertNorth = float3(posNorth, ReShade::GetLinearizedDepth(posNorth));
     float3 vertEast = float3(posEast, ReShade::GetLinearizedDepth(posEast));
+    
+    float3 normalVector = normalize(cross(vertCenter - vertNorth, vertCenter - vertEast)) * 0.5 + 0.5;
 
-    float3 normalLayer = cross(normalize(vertCenter - vertNorth), normalize(vertCenter - vertEast));
-
-    return 1.0 - saturate(dot(float3(0.0, 0.0, 1.0), normalLayer).rrr);
+    float retVal = 1.0 - saturate(dot(float3(0.0, 0.0, 1.0), normalVector));
+	retVal = exp(bias.x * retVal - bias.y) - 1.0;
+	return saturate(retVal);
 }
 
 float Posterize(float x, int numLevels, float continuity, float slope, int type) {
@@ -289,9 +317,12 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		Create PencilLayer
 	*******************************************************/
 	float currentDepth = ReShade::GetLinearizedDepth(texcoord);
-	float3 outlinesDepthBuffer = DepthEdges(texcoord).rrr * (currentDepth < fUIDepthOutlines.z ? (currentDepth > fUIDepthOutlines.y ? 1.0 : 0.0 ) : 0.0) * fUIDepthOutlines.x;
+	float3 outlinesDepthBuffer = DepthEdges(texcoord, fUIDepthBias).rrr;
+	outlinesDepthBuffer *= (currentDepth > fUIDepthOutlinesFading.x ? (currentDepth < fUIDepthOutlinesFading.y ? 1.0 : 0.0) : 0.0) * fUIDepthOutlinesStrength;
 	float3 lumaEdges = DiffEdges(SamplerColorfulPosterLuma, vpos.xy).rrr * fUILumaEdges;
+	lumaEdges *= (currentDepth > fUIEdgesFading.x ? (currentDepth < fUIEdgesFading.y ? 1.0 : 0.0) : 0.0);
 	float3 chromaEdges = ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr * fUIChromaEdges;
+	chromaEdges *= (currentDepth > fUIEdgesFading.x ? (currentDepth < fUIEdgesFading.y ? 1.0 : 0.0) : 0.0);
 
 	float3 pencilLayer = max(outlinesDepthBuffer, max(lumaEdges, chromaEdges));
 
