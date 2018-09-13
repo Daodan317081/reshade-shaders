@@ -239,9 +239,9 @@ float3 DepthEdges(float2 texcoord, float2 bias) {
     float3 normalVector = normalize(cross(vertCenter - vertNorth, vertCenter - vertEast)) * 0.5 + 0.5;
 
     float retVal = 1.0 - saturate(dot(float3(0.0, 0.0, 1.0), normalVector));
-	retVal = exp(bias.x * retVal - bias.y) - 1.0;
+    retVal = exp(bias.x * retVal - bias.y) - 1.0;
 	
-	return saturate(retVal);
+    return saturate(retVal);
 }
 
 float Posterize(float x, int numLevels, float continuity, float slope, int type) {
