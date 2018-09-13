@@ -221,7 +221,6 @@ float ConvEdges(sampler s, int2 vpos) {
 }
 
 float3 DepthEdges(float2 texcoord, float2 bias) {
-
     float3 offset = float3(ReShade::PixelSize.xy, 0.0);
     float2 posCenter = texcoord.xy;
     float2 posNorth = posCenter - offset.zy;
