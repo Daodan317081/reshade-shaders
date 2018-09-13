@@ -18,6 +18,13 @@
 #define UI_CATEGORY_GENERAL "General"
 #define UI_TOOLTIP_DEBUG "Enable Technique 'AdaptiveTintDebug'\n#define UI_ADAPTIVE_TINT_DEBUG_WINDOW_WIDTH=xyz\nDefault width is 300"
 
+uniform int iUIInfo<
+	ui_type = "combo";
+	ui_label = "Info";
+	ui_items = "Info\0";
+	ui_tooltip = "Enable Technique 'CalculateStats_MoveToTop'";
+> = 0;
+
 uniform int iUIWhiteLevelFormula <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_CURVES;
