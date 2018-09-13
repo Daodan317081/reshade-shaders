@@ -37,7 +37,8 @@
 #include "ReShade.fxh"
 
 #define UI_CATEGORY_POSTERIZATION "Posterization"
-#define UI_CATEGORY_PENCIL "Pencil Layer"
+#define UI_CATEGORY_PENCIL_STRENGTH "Pencil Layer Strength"
+#define UI_CATEGORY_PENCIL_FADING "Pencil Layer Fading"
 #define UI_CATEGORY_COLOR "Color"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
@@ -80,30 +81,21 @@ uniform float fUISlope <
 
 uniform bool iUIDebugOverlayPosterizeLevels <
 	ui_category = UI_CATEGORY_POSTERIZATION;
-	ui_label = "Show Posterization as Curve";
+	ui_label = "Show Posterization as Curve (Magenta)";
 > = 0;
 
 ////////////////////////// Pencil Layer //////////////////////////
 
 uniform float fUIDepthOutlinesStrength <
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL;
+	ui_category = UI_CATEGORY_PENCIL_STRENGTH;
 	ui_label = "Depth Outlines Strength";
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
-uniform float2 fUIDepthOutlinesFading<
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL;
-	ui_label = "Depth Oulines Fading";
-	ui_tooltip = "x: Fade Out Start\ny: Fade Out End";
-	ui_min = 0.0; ui_max = 1.0;
-	ui_step = 0.001;
-> = float2(0.0, 1.0);
-
 uniform float2 fUIDepthBias<
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL;
+	ui_category = UI_CATEGORY_PENCIL_STRENGTH;
 	ui_label = "Depth Outlines Bias";
 	ui_min = 0.0; ui_max = 10.0;
 	ui_step = 0.01;
@@ -112,26 +104,40 @@ uniform float2 fUIDepthBias<
 //Edge Detection
 uniform float fUILumaEdges <
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL;
+	ui_category = UI_CATEGORY_PENCIL_STRENGTH;
 	ui_label = "Luma Edges Strength";
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
 uniform float fUIChromaEdges <
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL;
+	ui_category = UI_CATEGORY_PENCIL_STRENGTH;
 	ui_label = "Chroma Edges Strength";
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
-uniform float2 fUIEdgesFading<
+uniform float3 fUIDepthOutlinesFading<
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL;
-	ui_label = "Edges Fading";
-	ui_tooltip = "x: Fade Out Start\ny: Fade Out End";
+	ui_category = UI_CATEGORY_PENCIL_FADING;
+	ui_label = "Outlines (Blue Curve)";
+	ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
 	ui_min = 0.0; ui_max = 1.0;
 	ui_step = 0.001;
-> = float2(0.0, 1.0);
+> = float3(0.0, 1.0, 0.8);
+
+uniform float3 fUIEdgesFading<
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_PENCIL_FADING;
+	ui_label = "Edges (Red Curve)";
+	ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
+	ui_min = 0.0; ui_max = 1.0;
+	ui_step = 0.001;
+> = float3(0.0, 1.0, 0.8);
+
+uniform bool bUIOverlayFadingCurve<
+	ui_label = "Show Curve";
+	ui_category = UI_CATEGORY_PENCIL_FADING;
+> = false;
 
 ////////////////////////// Color //////////////////////////
 
@@ -202,10 +208,10 @@ float DiffEdges(sampler s, int2 vpos) {
 }
 
 float ConvEdges(sampler s, int2 vpos) {
-	static const float sobelX[9] = { 1.0,  0.0, -1.0, 2.0, 0.0, -2.0, 1.0,  0.0, -1.0 };
-	static const float sobelY[9] = { 1.0,  2.0,  1.0, 0.0,  0.0,  0.0, -1.0, -2.0, -1.0 };
-	static const float sobelXM[9] = { -1.0,  0.0, 1.0, -2.0,  0.0, 2.0, -1.0,  0.0, 1.0 };
-	static const float sobelYM[9] = { -1.0, -2.0, -1.0, 0.0,  0.0,  0.0, 1.0,  2.0,  1.0 };
+	static const float sobelX[9] 	= {  1.0,  0.0, -1.0,  2.0,  0.0, -2.0,  1.0,  0.0, -1.0 };
+	static const float sobelY[9] 	= {  1.0,  2.0,  1.0,  0.0,  0.0,  0.0, -1.0, -2.0, -1.0 };
+	static const float sobelXM[9] 	= { -1.0,  0.0,  1.0, -2.0,  0.0,  2.0, -1.0,  0.0,  1.0 };
+	static const float sobelYM[9] 	= { -1.0, -2.0, -1.0,  0.0,  0.0,  0.0,  1.0,  2.0,  1.0 };
 	float4 acc = 0.0.rrrr;
 
 	[unroll]
@@ -266,6 +272,10 @@ float3 CMYKtoRGB(float4 cmyk) {
 	return (1.0.xxx - cmyk.xyz) * (1.0 - cmyk.w);
 }
 
+float DepthFade(float3 fade, float depth) {
+	return smoothstep(0.0, 1.0 - fade.z, depth + (0.2 - 1.2 * fade.x)) * smoothstep(0.0, 1.0 - fade.z, 1.0 - depth + (1.2 * fade.y - 1.0));
+}
+
 /******************************************************************************
 	Pixel Shader
 ******************************************************************************/
@@ -316,12 +326,9 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		Create PencilLayer
 	*******************************************************/
 	float currentDepth = ReShade::GetLinearizedDepth(texcoord);
-	float3 outlinesDepthBuffer = DepthEdges(texcoord, fUIDepthBias).rrr;
-	outlinesDepthBuffer *= (currentDepth > fUIDepthOutlinesFading.x ? (currentDepth < fUIDepthOutlinesFading.y ? 1.0 : 0.0) : 0.0) * fUIDepthOutlinesStrength;
-	float3 lumaEdges = DiffEdges(SamplerColorfulPosterLuma, vpos.xy).rrr * fUILumaEdges;
-	lumaEdges *= (currentDepth > fUIEdgesFading.x ? (currentDepth < fUIEdgesFading.y ? 1.0 : 0.0) : 0.0);
-	float3 chromaEdges = ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr * fUIChromaEdges;
-	chromaEdges *= (currentDepth > fUIEdgesFading.x ? (currentDepth < fUIEdgesFading.y ? 1.0 : 0.0) : 0.0);
+	float3 outlinesDepthBuffer = DepthEdges(texcoord, fUIDepthBias).rrr * fUIDepthOutlinesStrength * DepthFade(fUIDepthOutlinesFading, currentDepth);
+	float3 lumaEdges = DiffEdges(SamplerColorfulPosterLuma, vpos.xy).rrr * fUILumaEdges * DepthFade(fUIEdgesFading, currentDepth);
+	float3 chromaEdges = ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr * fUIChromaEdges * DepthFade(fUIEdgesFading, currentDepth);
 
 	float3 pencilLayer = max(outlinesDepthBuffer, max(lumaEdges, chromaEdges));
 
@@ -349,10 +356,29 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		return tex2D(SamplerColorfulPosterChroma, texcoord).rgb;
 
 	if(iUIDebugOverlayPosterizeLevels == 1) {
-		result = lerp(result, float3(1.0, 0.0, 1.0), saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType))))));
-		backbuffer = lerp(backbuffer, float3(1.0, 0.0, 1.0), saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType))))));
+		result = lerp(result, float3(1.0, 0.0, 1.0),
+					  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)))))
+					 );
+		backbuffer = lerp(backbuffer, float3(1.0, 0.0, 1.0),
+						  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType)))))
+						 );
 	}
 
+	if(bUIOverlayFadingCurve == 1) {
+		result = lerp(result, float3(0.0, 0.0, 1.0),
+					  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - DepthFade(fUIEdgesFading, texcoord.x)))))
+					 );
+		backbuffer = lerp(backbuffer, float3(0.0, 0.0, 1.0),
+						  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - DepthFade(fUIEdgesFading, texcoord.x)))))
+						 );
+		result = lerp(result, float3(1.0, 0.0, 0.0),
+					  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - DepthFade(fUIDepthOutlinesFading, texcoord.x)))))
+					 );
+		backbuffer = lerp(backbuffer, float3(1.0, 0.0, 0.0),
+						  saturate(exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - DepthFade(fUIDepthOutlinesFading, texcoord.x)))))
+						 );
+	}
+		
 	/*******************************************************
 		Set overall strength and return
 	*******************************************************/
