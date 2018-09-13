@@ -240,6 +240,7 @@ float3 DepthEdges(float2 texcoord, float2 bias) {
 
     float retVal = 1.0 - saturate(dot(float3(0.0, 0.0, 1.0), normalVector));
 	retVal = exp(bias.x * retVal - bias.y) - 1.0;
+	
 	return saturate(retVal);
 }
 
