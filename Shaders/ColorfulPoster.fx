@@ -215,7 +215,7 @@ uniform int iUIDebugMaps <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_DEBUG;
 	ui_label = "Show Debug Maps";
-	ui_items = "Off\0"
+	ui_items = 	"Off\0"
 				"Posterized Luma\0"
 				"Depth Buffer Outlines\0"
 				"Luma Edges\0"
@@ -402,10 +402,10 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	/*******************************************************
 		Create PencilLayer
 	*******************************************************/
-	float currentDepth 			= ReShade::GetLinearizedDepth(texcoord);
-	float3 outlinesDepthBuffer 	= DepthEdges(texcoord, fUIDepthBias).rrr;
-	float3 lumaEdges 			= DiffEdges(SamplerColorfulPosterLuma, vpos.xy).rrr;
-	float3 chromaEdges 			= ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr;
+	float currentDepth = ReShade::GetLinearizedDepth(texcoord);
+	float3 outlinesDepthBuffer = DepthEdges(texcoord, fUIDepthBias).rrr;
+	float3 lumaEdges = DiffEdges(SamplerColorfulPosterLuma, vpos.xy).rrr;
+	float3 chromaEdges = ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr;
 
 	float4 fading;
 	fading.F_OUTLINES_INDEX = StrengthCurve(fUIDepthOutlinesFading, currentDepth);
