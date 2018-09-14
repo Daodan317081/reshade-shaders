@@ -215,15 +215,15 @@ uniform int iUIDebugMaps <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_DEBUG;
 	ui_label = "Show Debug Maps";
-	ui_items = 	"Off\0"
-				"Posterized Luma\0"
-				"Depth Buffer Outlines\0"
-				"Luma Edges\0"
-				"Chroma Edges\0"
-				"Pencil Layer\0"
-				"Show Depth Buffer\0"
-				"Show Chroma Layer\0"
-				"Saturation\0";
+	ui_items = "Off\0"
+               "Posterized Luma\0"
+               "Depth Buffer Outlines\0"
+               "Luma Edges\0"
+               "Chroma Edges\0"
+               "Pencil Layer\0"
+               "Show Depth Buffer\0"
+               "Show Chroma Layer\0"
+               "Saturation\0";
 > = 0;
 
 ////////////////////////// Effect //////////////////////////
