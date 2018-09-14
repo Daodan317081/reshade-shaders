@@ -119,7 +119,7 @@ uniform float fUIChromaEdges <
 uniform float3 fUIDepthOutlinesFading<
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_PENCIL_FADING;
-	ui_label = "Outlines (Blue Curve)";
+	ui_label = "Outlines (Red Curve)";
 	ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
 	ui_min = 0.0; ui_max = 1.0;
 	ui_step = 0.001;
@@ -128,7 +128,7 @@ uniform float3 fUIDepthOutlinesFading<
 uniform float3 fUIEdgesFading<
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_PENCIL_FADING;
-	ui_label = "Edges (Red Curve)";
+	ui_label = "Edges (Blue Curve)";
 	ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
 	ui_min = 0.0; ui_max = 1.0;
 	ui_step = 0.001;
