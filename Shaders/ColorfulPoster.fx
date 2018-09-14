@@ -37,8 +37,8 @@
 #include "ReShade.fxh"
 
 #define UI_CATEGORY_POSTERIZATION "Posterization"
-#define UI_CATEGORY_PENCIL_STRENGTH "Pencil Layer Strength"
-#define UI_CATEGORY_PENCIL_FADING "Pencil Layer Fading"
+#define UI_CATEGORY_PENCIL_STRENGTH "Pencil Layer: Strength"
+#define UI_CATEGORY_PENCIL_MISC "Pencil Layer: Misc"
 #define UI_CATEGORY_COLOR "Color"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
@@ -93,6 +93,7 @@ uniform float fUIDepthOutlinesStrength <
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
+
 uniform float2 fUIDepthBias<
 	ui_type = "drag";
 	ui_category = UI_CATEGORY_PENCIL_STRENGTH;
@@ -116,27 +117,81 @@ uniform float fUIChromaEdges <
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
+//Misc
+#define F_OUTLINES_INDEX x
+#define F_EDGES_INDEX y
+#define F_LUMA_INDEX z
+#define F_SATURATION_INDEX w
+
 uniform float3 fUIDepthOutlinesFading<
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL_FADING;
-	ui_label = "Outlines (Red Curve)";
+	ui_category = UI_CATEGORY_PENCIL_MISC;
+	ui_label = "Outlines Fading Depth";
 	ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
-	ui_min = 0.0; ui_max = 1.0;
+	ui_min = -1.0; ui_max = 1.0;
 	ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
+
+uniform float3 fUIDepthOutlinesCurveColor<
+	ui_type = "color";
+	ui_category = UI_CATEGORY_PENCIL_MISC;
+	ui_label = "Curve Color";
+> = float3(1.0, 0.0, 0.0);
 
 uniform float3 fUIEdgesFading<
 	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL_FADING;
-	ui_label = "Edges (Blue Curve)";
+	ui_category = UI_CATEGORY_PENCIL_MISC;
+	ui_label = "Edges Fading Depth (Blue Curve)";
 	ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
-	ui_min = 0.0; ui_max = 1.0;
+	ui_min = -1.0; ui_max = 1.0;
 	ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
-uniform bool bUIOverlayFadingCurve<
-	ui_label = "Show Curve";
-	ui_category = UI_CATEGORY_PENCIL_FADING;
+uniform float3 fUIEdgesCurveColor<
+	ui_type = "color";
+	ui_category = UI_CATEGORY_PENCIL_MISC;
+	ui_label = "Curve Color";
+> = float3(0.0, 0.0, 1.0);
+
+uniform float3 fUIEdgesLumaFading <
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_PENCIL_MISC;
+	ui_label = "Pencil Luma Fading";
+	ui_min = -1.0; ui_max = 1.0;
+	ui_step = 0.001;
+> = float3(0.0, 1.0, 0.8);
+
+uniform float3 fUILumaCurveColor<
+	ui_type = "color";
+	ui_category = UI_CATEGORY_PENCIL_MISC;
+	ui_label = "Curve Color";
+> = float3(0.0, 1.0, 1.0);
+
+uniform float3 fUIEdgesSaturationFading <
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_PENCIL_MISC;
+	ui_label = "Pencil Saturation Fading";
+	ui_min = -1.0; ui_max = 1.0;
+	ui_step = 0.001;
+> = float3(0.0, 1.0, 0.8);
+
+uniform float3 fUISaturationCurveColor<
+	ui_type = "color";
+	ui_category = UI_CATEGORY_PENCIL_MISC;
+	ui_label = "Curve Color";
+> = float3(1.0, 0.5, 0.0);
+
+uniform float fUICurveWidth<
+	ui_type = "drag";
+	ui_category = UI_CATEGORY_PENCIL_MISC;
+	ui_label = "Curve Width";
+	ui_min = 1.0; ui_max = 10.0;
+	ui_step = 0.1;
+> = 1.0;
+
+uniform bool bUIOverlayFadingCurves<
+	ui_label = "Show Curves";
+	ui_category = UI_CATEGORY_PENCIL_MISC;
 > = false;
 
 ////////////////////////// Color //////////////////////////
@@ -160,7 +215,15 @@ uniform int iUIDebugMaps <
 	ui_type = "combo";
 	ui_category = UI_CATEGORY_DEBUG;
 	ui_label = "Show Debug Maps";
-	ui_items = "Off\0Posterized Luma\0Depth Buffer Outlines\0Luma Edges\0Chroma Edges\0Pencil Layer\0Show Depth Buffer\0Show Chroma Layer\0";
+	ui_items = "Off\0"
+				"Posterized Luma\0"
+				"Depth Buffer Outlines\0"
+				"Luma Edges\0"
+				"Chroma Edges\0"
+				"Pencil Layer\0"
+				"Show Depth Buffer\0"
+				"Show Chroma Layer\0"
+				"Saturation\0";
 > = 0;
 
 ////////////////////////// Effect //////////////////////////
@@ -273,10 +336,21 @@ float3 CMYKtoRGB(float4 cmyk) {
 	return (1.0.xxx - cmyk.xyz) * (1.0 - cmyk.w);
 }
 
-float DepthFade(float3 fade, float depth) {
+float GetSaturation(float3 color) {
+	float maxVal = max(color.r, max(color.g, color.b));
+	float minVal = min(color.r, min(color.g, color.b));         
+	return maxVal - minVal;
+}
+
+float StrengthCurve(float3 fade, float depth) {
 	float curveMin = smoothstep(0.0, 1.0 - fade.z, depth + (0.2 - 1.2 * fade.x));
 	float curveMax = smoothstep(0.0, 1.0 - fade.z, 1.0 - depth + (1.2 * fade.y - 1.0));
 	return curveMin * curveMax;
+}
+
+float3 DrawDebugCurve(float3 background, float2 texcoord, float value, float3 color, float curveDiv) {
+	float p = exp(-(BUFFER_HEIGHT/curveDiv) * length(texcoord - float2(texcoord.x, 1.0 - value)));
+	return lerp(background, color, saturate(p));
 }
 
 /******************************************************************************
@@ -332,17 +406,25 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 	float3 outlinesDepthBuffer 	= DepthEdges(texcoord, fUIDepthBias).rrr;
 	float3 lumaEdges 			= DiffEdges(SamplerColorfulPosterLuma, vpos.xy).rrr;
 	float3 chromaEdges 			= ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr;
+
+	float4 fading;
+	fading.F_OUTLINES_INDEX = StrengthCurve(fUIDepthOutlinesFading, currentDepth);
+	fading.F_EDGES_INDEX = StrengthCurve(fUIEdgesFading, currentDepth);
+	fading.F_LUMA_INDEX = StrengthCurve(fUIEdgesLumaFading, lumaPoster.x);
+	fading.F_SATURATION_INDEX = StrengthCurve(fUIEdgesSaturationFading, GetSaturation(colorLayer));
 	
-	outlinesDepthBuffer *= fUIDepthOutlinesStrength * DepthFade(fUIDepthOutlinesFading, currentDepth);
-	lumaEdges 			*= fUILumaEdges 			* DepthFade(fUIEdgesFading, currentDepth);
-	chromaEdges 		*= fUIChromaEdges 			* DepthFade(fUIEdgesFading, currentDepth);
+	outlinesDepthBuffer *= fUIDepthOutlinesStrength * fading.F_OUTLINES_INDEX;
+	lumaEdges 			*= fUILumaEdges 			* fading.F_EDGES_INDEX;
+	chromaEdges 		*= fUIChromaEdges 			* fading.F_EDGES_INDEX;
 
 	float3 pencilLayer = max(outlinesDepthBuffer, max(lumaEdges, chromaEdges));
+	pencilLayer *= fading.F_LUMA_INDEX * fading.F_SATURATION_INDEX;
 
 	/*******************************************************
 		Create result
 	*******************************************************/
 	float3 result = lerp(colorLayer, fUILineColor, pencilLayer);
+	result = lerp(backbuffer, result, fUIStrength);
 
 	/*******************************************************
 		Show debug stuff
@@ -361,30 +443,25 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
 		return ReShade::GetLinearizedDepth(texcoord).rrr;
 	else if(iUIDebugMaps == 7)
 		return tex2D(SamplerColorfulPosterChroma, texcoord).rgb;
+	else if(iUIDebugMaps == 8)
+		return GetSaturation(colorLayer).rrr;
 
 	if(iUIDebugOverlayPosterizeLevels == 1) {
-		float coord = Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType);
-		float value = exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - coord)));
-		result = lerp(result, float3(1.0, 0.0, 1.0), saturate(value));
-		backbuffer = lerp(backbuffer, float3(1.0, 0.0, 1.0), saturate(value));
+		float value = Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType);
+		result = DrawDebugCurve(result, texcoord, value, float3(1.0, 0.0, 1.0),fUICurveWidth);		
 	}
 
-	if(bUIOverlayFadingCurve == 1) {
-		float coord = DepthFade(fUIEdgesFading, texcoord.x);
-		float value = exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - coord)));
-		result = lerp(result, float3(0.0, 0.0, 1.0), saturate(value));
-		backbuffer = lerp(backbuffer, float3(0.0, 0.0, 1.0), saturate(value));
-
-		coord = DepthFade(fUIDepthOutlinesFading, texcoord.x);
-		value = exp(-BUFFER_HEIGHT * length(texcoord - float2(texcoord.x, 1.0 - coord)));
-		result = lerp(result, float3(1.0, 0.0, 0.0), saturate(value));
-		backbuffer = lerp(backbuffer, float3(1.0, 0.0, 0.0), saturate(value));
+	if(bUIOverlayFadingCurves == 1) {
+		result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIDepthOutlinesFading, texcoord.x), fUIDepthOutlinesCurveColor, fUICurveWidth);
+		result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesFading, texcoord.x), fUIEdgesCurveColor, fUICurveWidth);
+		result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesLumaFading, texcoord.x), fUILumaCurveColor, fUICurveWidth);
+		result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesSaturationFading, texcoord.x), fUISaturationCurveColor, fUICurveWidth);
 	}
 		
 	/*******************************************************
 		Set overall strength and return
 	*******************************************************/
-	return lerp(backbuffer, result, fUIStrength);
+	return result;
 }
 
 technique ColorfulPoster
