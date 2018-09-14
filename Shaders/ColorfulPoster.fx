@@ -132,12 +132,6 @@ uniform float3 fUIDepthOutlinesFading<
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
-uniform float3 fUIDepthOutlinesCurveColor<
-    ui_type = "color";
-    ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Curve Color";
-> = float3(1.0, 0.0, 0.0);
-
 uniform float3 fUIEdgesFading<
     ui_type = "drag";
     ui_category = UI_CATEGORY_PENCIL_MISC;
@@ -147,12 +141,6 @@ uniform float3 fUIEdgesFading<
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
-uniform float3 fUIEdgesCurveColor<
-    ui_type = "color";
-    ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Curve Color";
-> = float3(0.0, 0.0, 1.0);
-
 uniform float3 fUIEdgesLumaFading <
     ui_type = "drag";
     ui_category = UI_CATEGORY_PENCIL_MISC;
@@ -160,12 +148,6 @@ uniform float3 fUIEdgesLumaFading <
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
-
-uniform float3 fUILumaCurveColor<
-    ui_type = "color";
-    ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Curve Color";
-> = float3(0.0, 1.0, 1.0);
 
 uniform float3 fUIEdgesSaturationFading <
     ui_type = "drag";
@@ -175,10 +157,28 @@ uniform float3 fUIEdgesSaturationFading <
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
+uniform float3 fUIDepthOutlinesCurveColor<
+    ui_type = "color";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Outlines Curve Color";
+> = float3(1.0, 0.0, 0.0);
+
+uniform float3 fUIEdgesCurveColor<
+    ui_type = "color";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Edges Curve Color";
+> = float3(0.0, 0.0, 1.0);
+
+uniform float3 fUILumaCurveColor<
+    ui_type = "color";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Luma Curve Color";
+> = float3(0.0, 1.0, 1.0);
+
 uniform float3 fUISaturationCurveColor<
     ui_type = "color";
     ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Curve Color";
+    ui_label = "Saturation Curve Color";
 > = float3(1.0, 0.5, 0.0);
 
 uniform float fUICurveWidth<
@@ -187,7 +187,7 @@ uniform float fUICurveWidth<
     ui_label = "Curve Width";
     ui_min = 1.0; ui_max = 10.0;
     ui_step = 0.1;
-> = 1.0;
+> = 2.0;
 
 uniform bool bUIOverlayFadingCurves<
     ui_label = "Show Curves";
