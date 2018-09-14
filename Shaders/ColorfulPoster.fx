@@ -44,77 +44,77 @@
 #define UI_CATEGORY_EFFECT "Effect"
 
 /******************************************************************************
-	Uniforms
+    Uniforms
 ******************************************************************************/
 
 ////////////////////////// Posterization //////////////////////////
 uniform int iUILumaLevels <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_POSTERIZATION;
-	ui_label = "Luma Posterize Levels";
-	ui_min = 1; ui_max = 20;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_POSTERIZATION;
+    ui_label = "Luma Posterize Levels";
+    ui_min = 1; ui_max = 20;
 > = 16;
 
 uniform int iUIStepType <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_POSTERIZATION;
-	ui_label = "Curve Type";
-	ui_items = "Linear\0Smoothstep\0Logistic\0";
+    ui_type = "combo";
+    ui_category = UI_CATEGORY_POSTERIZATION;
+    ui_label = "Curve Type";
+    ui_items = "Linear\0Smoothstep\0Logistic\0";
 > = 2;
 
 uniform float fUIStepContinuity <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_POSTERIZATION;
-	ui_label = "Continuity";
-	ui_tooltip = "Broken up <-> Connected";
-	ui_min = 0.0; ui_max = 1.0;
-	ui_step = 0.01;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_POSTERIZATION;
+    ui_label = "Continuity";
+    ui_tooltip = "Broken up <-> Connected";
+    ui_min = 0.0; ui_max = 1.0;
+    ui_step = 0.01;
 > = 1.0;
 
 uniform float fUISlope <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_POSTERIZATION;
-	ui_label = "Slope Logistic Curve";
-	ui_min = 0.0; ui_max = 40.0;
-	ui_step = 0.1;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_POSTERIZATION;
+    ui_label = "Slope Logistic Curve";
+    ui_min = 0.0; ui_max = 40.0;
+    ui_step = 0.1;
 > = 13.0;
 
 uniform bool iUIDebugOverlayPosterizeLevels <
-	ui_category = UI_CATEGORY_POSTERIZATION;
-	ui_label = "Show Posterization as Curve (Magenta)";
+    ui_category = UI_CATEGORY_POSTERIZATION;
+    ui_label = "Show Posterization as Curve (Magenta)";
 > = 0;
 
 ////////////////////////// Pencil Layer //////////////////////////
 
 uniform float fUIDepthOutlinesStrength <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL_STRENGTH;
-	ui_label = "Depth Outlines Strength";
-	ui_min = 0.0; ui_max = 1.0;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_PENCIL_STRENGTH;
+    ui_label = "Depth Outlines Strength";
+    ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
 
 uniform float2 fUIDepthBias<
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL_STRENGTH;
-	ui_label = "Depth Outlines Bias";
-	ui_min = 0.0; ui_max = 10.0;
-	ui_step = 0.01;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_PENCIL_STRENGTH;
+    ui_label = "Depth Outlines Bias";
+    ui_min = 0.0; ui_max = 10.0;
+    ui_step = 0.01;
 > = float2(7.0, 2.9);
 
 //Edge Detection
 uniform float fUILumaEdges <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL_STRENGTH;
-	ui_label = "Luma Edges Strength";
-	ui_min = 0.0; ui_max = 1.0;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_PENCIL_STRENGTH;
+    ui_label = "Luma Edges Strength";
+    ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
 uniform float fUIChromaEdges <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL_STRENGTH;
-	ui_label = "Chroma Edges Strength";
-	ui_min = 0.0; ui_max = 1.0;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_PENCIL_STRENGTH;
+    ui_label = "Chroma Edges Strength";
+    ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
 //Misc
@@ -124,98 +124,98 @@ uniform float fUIChromaEdges <
 #define F_SATURATION_INDEX w
 
 uniform float3 fUIDepthOutlinesFading<
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL_MISC;
-	ui_label = "Outlines Fading Depth";
-	ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
-	ui_min = -1.0; ui_max = 1.0;
-	ui_step = 0.001;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Outlines Fading Depth";
+    ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
+    ui_min = -1.0; ui_max = 1.0;
+    ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
 uniform float3 fUIDepthOutlinesCurveColor<
-	ui_type = "color";
-	ui_category = UI_CATEGORY_PENCIL_MISC;
-	ui_label = "Curve Color";
+    ui_type = "color";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Curve Color";
 > = float3(1.0, 0.0, 0.0);
 
 uniform float3 fUIEdgesFading<
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL_MISC;
-	ui_label = "Edges Fading Depth (Blue Curve)";
-	ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
-	ui_min = -1.0; ui_max = 1.0;
-	ui_step = 0.001;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Edges Fading Depth (Blue Curve)";
+    ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
+    ui_min = -1.0; ui_max = 1.0;
+    ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
 uniform float3 fUIEdgesCurveColor<
-	ui_type = "color";
-	ui_category = UI_CATEGORY_PENCIL_MISC;
-	ui_label = "Curve Color";
+    ui_type = "color";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Curve Color";
 > = float3(0.0, 0.0, 1.0);
 
 uniform float3 fUIEdgesLumaFading <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL_MISC;
-	ui_label = "Pencil Luma Fading";
-	ui_min = -1.0; ui_max = 1.0;
-	ui_step = 0.001;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Pencil Luma Fading";
+    ui_min = -1.0; ui_max = 1.0;
+    ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
 uniform float3 fUILumaCurveColor<
-	ui_type = "color";
-	ui_category = UI_CATEGORY_PENCIL_MISC;
-	ui_label = "Curve Color";
+    ui_type = "color";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Curve Color";
 > = float3(0.0, 1.0, 1.0);
 
 uniform float3 fUIEdgesSaturationFading <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL_MISC;
-	ui_label = "Pencil Saturation Fading";
-	ui_min = -1.0; ui_max = 1.0;
-	ui_step = 0.001;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Pencil Saturation Fading";
+    ui_min = -1.0; ui_max = 1.0;
+    ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
 uniform float3 fUISaturationCurveColor<
-	ui_type = "color";
-	ui_category = UI_CATEGORY_PENCIL_MISC;
-	ui_label = "Curve Color";
+    ui_type = "color";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Curve Color";
 > = float3(1.0, 0.5, 0.0);
 
 uniform float fUICurveWidth<
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_PENCIL_MISC;
-	ui_label = "Curve Width";
-	ui_min = 1.0; ui_max = 10.0;
-	ui_step = 0.1;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Curve Width";
+    ui_min = 1.0; ui_max = 10.0;
+    ui_step = 0.1;
 > = 1.0;
 
 uniform bool bUIOverlayFadingCurves<
-	ui_label = "Show Curves";
-	ui_category = UI_CATEGORY_PENCIL_MISC;
+    ui_label = "Show Curves";
+    ui_category = UI_CATEGORY_PENCIL_MISC;
 > = false;
 
 ////////////////////////// Color //////////////////////////
 
 uniform float fUITint <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_COLOR;
-	ui_label = "Tint Strength";
-	ui_min = 0.0; ui_max = 1.0;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_COLOR;
+    ui_label = "Tint Strength";
+    ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
 uniform float3 fUILineColor <
-	ui_type = "color";
-	ui_category = UI_CATEGORY_COLOR;
-	ui_label = "Line Color";
+    ui_type = "color";
+    ui_category = UI_CATEGORY_COLOR;
+    ui_label = "Line Color";
 > = float3(0.0, 0.0, 0.0);
 
 ////////////////////////// Debug //////////////////////////
 
 uniform int iUIDebugMaps <
-	ui_type = "combo";
-	ui_category = UI_CATEGORY_DEBUG;
-	ui_label = "Show Debug Maps";
-	ui_items = "Off\0"
+    ui_type = "combo";
+    ui_category = UI_CATEGORY_DEBUG;
+    ui_label = "Show Debug Maps";
+    ui_items = "Off\0"
                "Posterized Luma\0"
                "Depth Buffer Outlines\0"
                "Luma Edges\0"
@@ -229,14 +229,14 @@ uniform int iUIDebugMaps <
 ////////////////////////// Effect //////////////////////////
 
 uniform float fUIStrength <
-	ui_type = "drag";
-	ui_category = UI_CATEGORY_EFFECT;
-	ui_label = "Strength";
-	ui_min = 0.0; ui_max = 1.0;
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_EFFECT;
+    ui_label = "Strength";
+    ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
 /******************************************************************************
-	Textures
+    Textures
 ******************************************************************************/
 
 texture2D texColorfulPosterChroma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
@@ -245,48 +245,48 @@ texture2D texColorfulPosterLuma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; 
 sampler2D SamplerColorfulPosterLuma { Texture = texColorfulPosterLuma; };
 
 /******************************************************************************
-	Functions
+    Functions
 ******************************************************************************/
 
 #define MAX_VALUE(v) max(v.x, max(v.y, v.z))
 
 float DiffEdges(sampler s, int2 vpos) {
-	static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
-	float valC = dot(tex2Dfetch(s, int4(vpos, 0, 0)).rgb, LumaCoeff);
-	float4 val1 = float4(	
-		dot(tex2Dfetch(s, int4(vpos + int2( 0, -1), 0, 0)).rgb, LumaCoeff),//N
-		dot(tex2Dfetch(s, int4(vpos + int2( 1, -1), 0, 0)).rgb, LumaCoeff),//NE
-		dot(tex2Dfetch(s, int4(vpos + int2( 1,  0), 0, 0)).rgb, LumaCoeff),//E
-		dot(tex2Dfetch(s, int4(vpos + int2( 1,  1), 0, 0)).rgb, LumaCoeff)//SE
-		);
-	float4 val2 = float4(	
-		dot(tex2Dfetch(s, int4(vpos + int2( 0,  1), 0, 0)).rgb, LumaCoeff),//S
-		dot(tex2Dfetch(s, int4(vpos + int2(-1,  1), 0, 0)).rgb, LumaCoeff),//SW
-		dot(tex2Dfetch(s, int4(vpos + int2(-1,  0), 0, 0)).rgb, LumaCoeff),//W
-		dot(tex2Dfetch(s, int4(vpos + int2(-1, -1), 0, 0)).rgb, LumaCoeff)//NW
-		);
+    static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
+    float valC = dot(tex2Dfetch(s, int4(vpos, 0, 0)).rgb, LumaCoeff);
+    float4 val1 = float4(    
+        dot(tex2Dfetch(s, int4(vpos + int2( 0, -1), 0, 0)).rgb, LumaCoeff),//N
+        dot(tex2Dfetch(s, int4(vpos + int2( 1, -1), 0, 0)).rgb, LumaCoeff),//NE
+        dot(tex2Dfetch(s, int4(vpos + int2( 1,  0), 0, 0)).rgb, LumaCoeff),//E
+        dot(tex2Dfetch(s, int4(vpos + int2( 1,  1), 0, 0)).rgb, LumaCoeff)//SE
+        );
+    float4 val2 = float4(    
+        dot(tex2Dfetch(s, int4(vpos + int2( 0,  1), 0, 0)).rgb, LumaCoeff),//S
+        dot(tex2Dfetch(s, int4(vpos + int2(-1,  1), 0, 0)).rgb, LumaCoeff),//SW
+        dot(tex2Dfetch(s, int4(vpos + int2(-1,  0), 0, 0)).rgb, LumaCoeff),//W
+        dot(tex2Dfetch(s, int4(vpos + int2(-1, -1), 0, 0)).rgb, LumaCoeff)//NW
+        );
 
-	float4 diffs = abs(val1 - val2);
-	return saturate((diffs.x + diffs.y + diffs.z + diffs.w) * (1.0 - valC));
+    float4 diffs = abs(val1 - val2);
+    return saturate((diffs.x + diffs.y + diffs.z + diffs.w) * (1.0 - valC));
 }
 
 float ConvEdges(sampler s, int2 vpos) {
-	static const float sobelX[9] 	= {  1.0,  0.0, -1.0,  2.0,  0.0, -2.0,  1.0,  0.0, -1.0 };
-	static const float sobelY[9] 	= {  1.0,  2.0,  1.0,  0.0,  0.0,  0.0, -1.0, -2.0, -1.0 };
-	static const float sobelXM[9] 	= { -1.0,  0.0,  1.0, -2.0,  0.0,  2.0, -1.0,  0.0,  1.0 };
-	static const float sobelYM[9] 	= { -1.0, -2.0, -1.0,  0.0,  0.0,  0.0,  1.0,  2.0,  1.0 };
-	float4 acc = 0.0.rrrr;
+    static const float sobelX[9]      = {  1.0,  0.0, -1.0,  2.0,  0.0, -2.0,  1.0,  0.0, -1.0 };
+    static const float sobelY[9]      = {  1.0,  2.0,  1.0,  0.0,  0.0,  0.0, -1.0, -2.0, -1.0 };
+    static const float sobelXM[9]     = { -1.0,  0.0,  1.0, -2.0,  0.0,  2.0, -1.0,  0.0,  1.0 };
+    static const float sobelYM[9]     = { -1.0, -2.0, -1.0,  0.0,  0.0,  0.0,  1.0,  2.0,  1.0 };
+    float4 acc = 0.0.rrrr;
 
-	[unroll]
-	for(int m = 0; m < 3; m++) {
-		[unroll]
-		for(int n = 0; n < 3; n++) {
-			float3 pixel = tex2Dfetch(s, int4( (vpos.x - 1 + n), (vpos.y - 1 + m), 0, 0)).rgb;
-			pixel = MAX_VALUE(pixel);
-			acc += float4(sobelX[n + (m*3)], sobelY[n + (m*3)], sobelXM[n + (m*3)], sobelYM[n + (m*3)]) * pixel.x;
-		}
-	}
-	return max(acc.x, max(acc.y, max(acc.z, acc.w)));
+    [unroll]
+    for(int m = 0; m < 3; m++) {
+        [unroll]
+        for(int n = 0; n < 3; n++) {
+            float3 pixel = tex2Dfetch(s, int4( (vpos.x - 1 + n), (vpos.y - 1 + m), 0, 0)).rgb;
+            pixel = MAX_VALUE(pixel);
+            acc += float4(sobelX[n + (m*3)], sobelY[n + (m*3)], sobelXM[n + (m*3)], sobelYM[n + (m*3)]) * pixel.x;
+        }
+    }
+    return max(acc.x, max(acc.y, max(acc.z, acc.w)));
 }
 
 float3 DepthEdges(float2 texcoord, float2 bias) {
@@ -303,177 +303,177 @@ float3 DepthEdges(float2 texcoord, float2 bias) {
 
     float retVal = 1.0 - saturate(dot(float3(0.0, 0.0, 1.0), normalVector));
     retVal = exp(bias.x * retVal - bias.y) - 1.0;
-	
+    
     return saturate(retVal);
 }
 
 float Posterize(float x, int numLevels, float continuity, float slope, int type) {
-	float stepheight = 1.0 / numLevels;
-	float stepnum = floor(x * numLevels);
-	float frc = frac(x * numLevels);
-	float step1 = floor(frc) * stepheight;
-	float step2;
+    float stepheight = 1.0 / numLevels;
+    float stepnum = floor(x * numLevels);
+    float frc = frac(x * numLevels);
+    float step1 = floor(frc) * stepheight;
+    float step2;
 
-	if(type == 1)
-		step2 = smoothstep(0.0, 1.0, frc) * stepheight;
-	else if(type == 2)
-		step2 = (1.0 / (1.0 + exp(-slope*(frc - 0.5)))) * stepheight;
-	else
-		step2 = frc * stepheight;
+    if(type == 1)
+        step2 = smoothstep(0.0, 1.0, frc) * stepheight;
+    else if(type == 2)
+        step2 = (1.0 / (1.0 + exp(-slope*(frc - 0.5)))) * stepheight;
+    else
+        step2 = frc * stepheight;
 
-	return lerp(step1, step2, continuity) + stepheight * stepnum;
+    return lerp(step1, step2, continuity) + stepheight * stepnum;
 }
 
 float4 RGBtoCMYK(float3 color) {
-	float3 CMY;
-	float K;
-	K = 1.0 - max(color.r, max(color.g, color.b));
-	CMY = (1.0 - color - K) / (1.0 - K);
-	return float4(CMY, K);
+    float3 CMY;
+    float K;
+    K = 1.0 - max(color.r, max(color.g, color.b));
+    CMY = (1.0 - color - K) / (1.0 - K);
+    return float4(CMY, K);
 }
 
 float3 CMYKtoRGB(float4 cmyk) {
-	return (1.0.xxx - cmyk.xyz) * (1.0 - cmyk.w);
+    return (1.0.xxx - cmyk.xyz) * (1.0 - cmyk.w);
 }
 
 float GetSaturation(float3 color) {
-	float maxVal = max(color.r, max(color.g, color.b));
-	float minVal = min(color.r, min(color.g, color.b));         
-	return maxVal - minVal;
+    float maxVal = max(color.r, max(color.g, color.b));
+    float minVal = min(color.r, min(color.g, color.b));         
+    return maxVal - minVal;
 }
 
 float StrengthCurve(float3 fade, float depth) {
-	float curveMin = smoothstep(0.0, 1.0 - fade.z, depth + (0.2 - 1.2 * fade.x));
-	float curveMax = smoothstep(0.0, 1.0 - fade.z, 1.0 - depth + (1.2 * fade.y - 1.0));
-	return curveMin * curveMax;
+    float curveMin = smoothstep(0.0, 1.0 - fade.z, depth + (0.2 - 1.2 * fade.x));
+    float curveMax = smoothstep(0.0, 1.0 - fade.z, 1.0 - depth + (1.2 * fade.y - 1.0));
+    return curveMin * curveMax;
 }
 
 float3 DrawDebugCurve(float3 background, float2 texcoord, float value, float3 color, float curveDiv) {
-	float p = exp(-(BUFFER_HEIGHT/curveDiv) * length(texcoord - float2(texcoord.x, 1.0 - value)));
-	return lerp(background, color, saturate(p));
+    float p = exp(-(BUFFER_HEIGHT/curveDiv) * length(texcoord - float2(texcoord.x, 1.0 - value)));
+    return lerp(background, color, saturate(p));
 }
 
 /******************************************************************************
-	Pixel Shader
+    Pixel Shader
 ******************************************************************************/
 
 //Convolution gets currently done with samplers, so rendering to a texture is necessary
 void Chroma_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord, out float3 chroma : SV_Target0, out float3 luma : SV_Target1) {
-	static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
-	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
-	luma = dot(color, LumaCoeff);
-	chroma = color - luma;
+    static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
+    float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
+    luma = dot(color, LumaCoeff);
+    chroma = color - luma;
 }
 
 float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
-	static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
-	/*******************************************************
-		Get BackBuffer
-	*******************************************************/
-	float3 backbuffer = tex2D(ReShade::BackBuffer, texcoord).rgb;
+    static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
+    /*******************************************************
+        Get BackBuffer
+    *******************************************************/
+    float3 backbuffer = tex2D(ReShade::BackBuffer, texcoord).rgb;
 
-	/*******************************************************
-		Calculate chroma and luma; posterize luma
-	*******************************************************/
-	float luma = dot(backbuffer, LumaCoeff);
-	float3 chroma = backbuffer - luma;
-	float3 lumaPoster = Posterize(luma, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType).rrr;
+    /*******************************************************
+        Calculate chroma and luma; posterize luma
+    *******************************************************/
+    float luma = dot(backbuffer, LumaCoeff);
+    float3 chroma = backbuffer - luma;
+    float3 lumaPoster = Posterize(luma, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType).rrr;
 
-	/*******************************************************
-		Color
-	*******************************************************/
-	float3 mask, image, colorLayer;
+    /*******************************************************
+        Color
+    *******************************************************/
+    float3 mask, image, colorLayer;
 
-	//Convert RGB to CMYK, add cyan tint, set K to 0.0
-	float4 backbufferCMYK = RGBtoCMYK(backbuffer);
-	backbufferCMYK.xyz += float3(0.2, -0.1, -0.2);
-	backbufferCMYK.w = 0.0;
+    //Convert RGB to CMYK, add cyan tint, set K to 0.0
+    float4 backbufferCMYK = RGBtoCMYK(backbuffer);
+    backbufferCMYK.xyz += float3(0.2, -0.1, -0.2);
+    backbufferCMYK.w = 0.0;
 
-	//Convert back to RGB
-	mask = CMYKtoRGB(saturate(backbufferCMYK));
-	
-	//add luma to chroma
-	image = chroma + lumaPoster;
+    //Convert back to RGB
+    mask = CMYKtoRGB(saturate(backbufferCMYK));
+    
+    //add luma to chroma
+    image = chroma + lumaPoster;
 
-	//Blend with 'hard light'
-	colorLayer = lerp(2*image*mask, 1.0 - 2.0 * (1.0 - image) * (1.0 - mask), step(0.5, luma.r));
-	colorLayer = lerp(image, colorLayer, fUITint);
+    //Blend with 'hard light'
+    colorLayer = lerp(2*image*mask, 1.0 - 2.0 * (1.0 - image) * (1.0 - mask), step(0.5, luma.r));
+    colorLayer = lerp(image, colorLayer, fUITint);
 
-	/*******************************************************
-		Create PencilLayer
-	*******************************************************/
-	float currentDepth = ReShade::GetLinearizedDepth(texcoord);
-	float3 outlinesDepthBuffer = DepthEdges(texcoord, fUIDepthBias).rrr;
-	float3 lumaEdges = DiffEdges(SamplerColorfulPosterLuma, vpos.xy).rrr;
-	float3 chromaEdges = ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr;
+    /*******************************************************
+        Create PencilLayer
+    *******************************************************/
+    float currentDepth = ReShade::GetLinearizedDepth(texcoord);
+    float3 outlinesDepthBuffer = DepthEdges(texcoord, fUIDepthBias).rrr;
+    float3 lumaEdges = DiffEdges(SamplerColorfulPosterLuma, vpos.xy).rrr;
+    float3 chromaEdges = ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr;
 
-	float4 fading;
-	fading.F_OUTLINES_INDEX = StrengthCurve(fUIDepthOutlinesFading, currentDepth);
-	fading.F_EDGES_INDEX = StrengthCurve(fUIEdgesFading, currentDepth);
-	fading.F_LUMA_INDEX = StrengthCurve(fUIEdgesLumaFading, lumaPoster.x);
-	fading.F_SATURATION_INDEX = StrengthCurve(fUIEdgesSaturationFading, GetSaturation(colorLayer));
-	
-	outlinesDepthBuffer *= fUIDepthOutlinesStrength * fading.F_OUTLINES_INDEX;
-	lumaEdges 			*= fUILumaEdges 			* fading.F_EDGES_INDEX;
-	chromaEdges 		*= fUIChromaEdges 			* fading.F_EDGES_INDEX;
+    float4 fading;
+    fading.F_OUTLINES_INDEX = StrengthCurve(fUIDepthOutlinesFading, currentDepth);
+    fading.F_EDGES_INDEX = StrengthCurve(fUIEdgesFading, currentDepth);
+    fading.F_LUMA_INDEX = StrengthCurve(fUIEdgesLumaFading, lumaPoster.x);
+    fading.F_SATURATION_INDEX = StrengthCurve(fUIEdgesSaturationFading, GetSaturation(colorLayer));
+    
+    outlinesDepthBuffer *= fUIDepthOutlinesStrength * fading.F_OUTLINES_INDEX;
+    lumaEdges           *= fUILumaEdges             * fading.F_EDGES_INDEX;
+    chromaEdges         *= fUIChromaEdges           * fading.F_EDGES_INDEX;
 
-	float3 pencilLayer = max(outlinesDepthBuffer, max(lumaEdges, chromaEdges));
-	pencilLayer *= fading.F_LUMA_INDEX * fading.F_SATURATION_INDEX;
+    float3 pencilLayer = max(outlinesDepthBuffer, max(lumaEdges, chromaEdges));
+    pencilLayer *= fading.F_LUMA_INDEX * fading.F_SATURATION_INDEX;
 
-	/*******************************************************
-		Create result
-	*******************************************************/
-	float3 result = lerp(colorLayer, fUILineColor, pencilLayer);
-	result = lerp(backbuffer, result, fUIStrength);
+    /*******************************************************
+        Create result
+    *******************************************************/
+    float3 result = lerp(colorLayer, fUILineColor, pencilLayer);
+    result = lerp(backbuffer, result, fUIStrength);
 
-	/*******************************************************
-		Show debug stuff
-	*******************************************************/
-	if(iUIDebugMaps == 1)
-		result = lumaPoster;
-	else if(iUIDebugMaps == 2)
-		result = lerp(1.0.rrr, fUILineColor, outlinesDepthBuffer);
-	else if(iUIDebugMaps == 3)
-		result = lerp(1.0.rrr, fUILineColor, lumaEdges);
-	else if(iUIDebugMaps == 4)
-		result = lerp(1.0.rrr, fUILineColor, chromaEdges);
-	else if(iUIDebugMaps == 5)
-		result = lerp(1.0.rrr, fUILineColor, pencilLayer);
-	else if(iUIDebugMaps == 6)
-		return ReShade::GetLinearizedDepth(texcoord).rrr;
-	else if(iUIDebugMaps == 7)
-		return tex2D(SamplerColorfulPosterChroma, texcoord).rgb;
-	else if(iUIDebugMaps == 8)
-		return GetSaturation(colorLayer).rrr;
+    /*******************************************************
+        Show debug stuff
+    *******************************************************/
+    if(iUIDebugMaps == 1)
+        result = lumaPoster;
+    else if(iUIDebugMaps == 2)
+        result = lerp(1.0.rrr, fUILineColor, outlinesDepthBuffer);
+    else if(iUIDebugMaps == 3)
+        result = lerp(1.0.rrr, fUILineColor, lumaEdges);
+    else if(iUIDebugMaps == 4)
+        result = lerp(1.0.rrr, fUILineColor, chromaEdges);
+    else if(iUIDebugMaps == 5)
+        result = lerp(1.0.rrr, fUILineColor, pencilLayer);
+    else if(iUIDebugMaps == 6)
+        return ReShade::GetLinearizedDepth(texcoord).rrr;
+    else if(iUIDebugMaps == 7)
+        return tex2D(SamplerColorfulPosterChroma, texcoord).rgb;
+    else if(iUIDebugMaps == 8)
+        return GetSaturation(colorLayer).rrr;
 
-	if(iUIDebugOverlayPosterizeLevels == 1) {
-		float value = Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType);
-		result = DrawDebugCurve(result, texcoord, value, float3(1.0, 0.0, 1.0),fUICurveWidth);		
-	}
+    if(iUIDebugOverlayPosterizeLevels == 1) {
+        float value = Posterize(texcoord.x, iUILumaLevels, fUIStepContinuity, fUISlope, iUIStepType);
+        result = DrawDebugCurve(result, texcoord, value, float3(1.0, 0.0, 1.0),fUICurveWidth);        
+    }
 
-	if(bUIOverlayFadingCurves == 1) {
-		result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIDepthOutlinesFading, texcoord.x), fUIDepthOutlinesCurveColor, fUICurveWidth);
-		result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesFading, texcoord.x), fUIEdgesCurveColor, fUICurveWidth);
-		result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesLumaFading, texcoord.x), fUILumaCurveColor, fUICurveWidth);
-		result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesSaturationFading, texcoord.x), fUISaturationCurveColor, fUICurveWidth);
-	}
-		
-	/*******************************************************
-		Set overall strength and return
-	*******************************************************/
-	return result;
+    if(bUIOverlayFadingCurves == 1) {
+        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIDepthOutlinesFading, texcoord.x), fUIDepthOutlinesCurveColor, fUICurveWidth);
+        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesFading, texcoord.x), fUIEdgesCurveColor, fUICurveWidth);
+        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesLumaFading, texcoord.x), fUILumaCurveColor, fUICurveWidth);
+        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesSaturationFading, texcoord.x), fUISaturationCurveColor, fUICurveWidth);
+    }
+        
+    /*******************************************************
+        Set overall strength and return
+    *******************************************************/
+    return result;
 }
 
 technique ColorfulPoster
 {
-	pass {
-		VertexShader = PostProcessVS;
-		PixelShader = Chroma_PS;
-		RenderTarget0 = texColorfulPosterChroma;
-		RenderTarget1 = texColorfulPosterLuma;
-	}
-	pass {
-		VertexShader = PostProcessVS;
-		PixelShader = ColorfulPoster_PS;
-	}
+    pass {
+        VertexShader = PostProcessVS;
+        PixelShader = Chroma_PS;
+        RenderTarget0 = texColorfulPosterChroma;
+        RenderTarget1 = texColorfulPosterLuma;
+    }
+    pass {
+        VertexShader = PostProcessVS;
+        PixelShader = ColorfulPoster_PS;
+    }
 }
