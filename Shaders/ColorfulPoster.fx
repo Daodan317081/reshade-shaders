@@ -37,8 +37,8 @@
 #include "ReShade.fxh"
 
 #define UI_CATEGORY_POSTERIZATION "Posterization"
-#define UI_CATEGORY_PENCIL_STRENGTH "Pencil Layer: Strength"
-#define UI_CATEGORY_PENCIL_MISC "Pencil Layer: Misc"
+#define UI_CATEGORY_PENCIL_STRENGTH "Pencil Layer Setup"
+#define UI_CATEGORY_PENCIL_MISC "Pencil Layer Misc"
 #define UI_CATEGORY_COLOR "Color"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
@@ -93,7 +93,6 @@ uniform float fUIDepthOutlinesStrength <
     ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
-
 uniform float2 fUIDepthBias<
     ui_type = "drag";
     ui_category = UI_CATEGORY_PENCIL_STRENGTH;
@@ -103,17 +102,11 @@ uniform float2 fUIDepthBias<
 > = float2(7.0, 2.9);
 
 //Edge Detection
-uniform float fUILumaEdges <
+uniform float2 fUIEdgeDetectionStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_PENCIL_STRENGTH;
-    ui_label = "Luma Edges Strength";
-    ui_min = 0.0; ui_max = 1.0;
-> = 1.0;
-
-uniform float fUIChromaEdges <
-    ui_type = "drag";
-    ui_category = UI_CATEGORY_PENCIL_STRENGTH;
-    ui_label = "Chroma Edges Strength";
+    ui_label = "Edge Detection Strength";
+    ui_tooltip = "x: Luma Channel\ny: Chroma Channel";
     ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
@@ -123,19 +116,19 @@ uniform float fUIChromaEdges <
 #define F_LUMA_INDEX z
 #define F_SATURATION_INDEX w
 
-uniform float3 fUIDepthOutlinesFading<
+uniform float3 fUIOutlinesDistanceFading<
     ui_type = "drag";
     ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Outlines Fading Depth";
+    ui_label = "Fade outlines in/out with distance";
     ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
-uniform float3 fUIEdgesFading<
+uniform float3 fUIEdgesDistanceFading<
     ui_type = "drag";
     ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Edges Fading Depth (Blue Curve)";
+    ui_label = "Fade edges in/out with distance";
     ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
@@ -144,7 +137,7 @@ uniform float3 fUIEdgesFading<
 uniform float3 fUIEdgesLumaFading <
     ui_type = "drag";
     ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Pencil Luma Fading";
+    ui_label = "Weight Pencil-layer with luma";
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
@@ -152,7 +145,7 @@ uniform float3 fUIEdgesLumaFading <
 uniform float3 fUIEdgesSaturationFading <
     ui_type = "drag";
     ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Pencil Saturation Fading";
+    ui_label = "Weight Pencil-layer with saturation";
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
@@ -160,25 +153,25 @@ uniform float3 fUIEdgesSaturationFading <
 uniform float3 fUIDepthOutlinesCurveColor<
     ui_type = "color";
     ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Outlines Curve Color";
+    ui_label = "Outlines Fading Curve Color";
 > = float3(1.0, 0.0, 0.0);
 
 uniform float3 fUIEdgesCurveColor<
     ui_type = "color";
     ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Edges Curve Color";
+    ui_label = "Edges Fading Curve Color";
 > = float3(0.0, 0.0, 1.0);
 
 uniform float3 fUILumaCurveColor<
     ui_type = "color";
     ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Luma Curve Color";
+    ui_label = "Luma Weight Curve Color";
 > = float3(0.0, 1.0, 1.0);
 
 uniform float3 fUISaturationCurveColor<
     ui_type = "color";
     ui_category = UI_CATEGORY_PENCIL_MISC;
-    ui_label = "Saturation Curve Color";
+    ui_label = "Saturation Weight Curve Color";
 > = float3(1.0, 0.5, 0.0);
 
 uniform float fUICurveWidth<
@@ -408,14 +401,14 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
     float3 chromaEdges = ConvEdges(SamplerColorfulPosterChroma, vpos.xy).rrr;
 
     float4 fading;
-    fading.F_OUTLINES_INDEX = StrengthCurve(fUIDepthOutlinesFading, currentDepth);
-    fading.F_EDGES_INDEX = StrengthCurve(fUIEdgesFading, currentDepth);
+    fading.F_OUTLINES_INDEX = StrengthCurve(fUIOutlinesDistanceFading, currentDepth);
+    fading.F_EDGES_INDEX = StrengthCurve(fUIEdgesDistanceFading, currentDepth);
     fading.F_LUMA_INDEX = StrengthCurve(fUIEdgesLumaFading, lumaPoster.x);
     fading.F_SATURATION_INDEX = StrengthCurve(fUIEdgesSaturationFading, GetSaturation(colorLayer));
     
     outlinesDepthBuffer *= fUIDepthOutlinesStrength * fading.F_OUTLINES_INDEX;
-    lumaEdges           *= fUILumaEdges             * fading.F_EDGES_INDEX;
-    chromaEdges         *= fUIChromaEdges           * fading.F_EDGES_INDEX;
+    lumaEdges           *= fUIEdgeDetectionStrength.x * fading.F_EDGES_INDEX;
+    chromaEdges         *= fUIEdgeDetectionStrength.y * fading.F_EDGES_INDEX;
 
     float3 pencilLayer = max(outlinesDepthBuffer, max(lumaEdges, chromaEdges));
     pencilLayer *= fading.F_LUMA_INDEX * fading.F_SATURATION_INDEX;
@@ -452,8 +445,8 @@ float3 ColorfulPoster_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) 
     }
 
     if(bUIOverlayFadingCurves == 1) {
-        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIDepthOutlinesFading, texcoord.x), fUIDepthOutlinesCurveColor, fUICurveWidth);
-        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesFading, texcoord.x), fUIEdgesCurveColor, fUICurveWidth);
+        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIOutlinesDistanceFading, texcoord.x), fUIDepthOutlinesCurveColor, fUICurveWidth);
+        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesDistanceFading, texcoord.x), fUIEdgesCurveColor, fUICurveWidth);
         result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesLumaFading, texcoord.x), fUILumaCurveColor, fUICurveWidth);
         result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesSaturationFading, texcoord.x), fUISaturationCurveColor, fUICurveWidth);
     }
