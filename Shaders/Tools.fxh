@@ -21,6 +21,13 @@
 #define YIQ_Q_RANGE float2(-0.5226, 0.5226)
 #define FLOAT_RANGE float2(0.0, 1.0)
 
+#define MAX2(v) max(v.x, v.y)
+#define MIN2(v) min(v.x, v.y)
+#define MAX3(v) max(v.x, max(v.y, v.z))
+#define MIN3(v) min(v.x, min(v.y, v.z))
+#define MAX4(v) max(v.x, max(v.y, max(v.z, v.w)))
+#define MIN4(v) min(v.x, min(v.y, min(v.z, v.w)))
+
 /*
 uniform int iUILayerMode <
 	ui_type = "combo";
