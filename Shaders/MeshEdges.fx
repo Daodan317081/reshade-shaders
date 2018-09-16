@@ -10,27 +10,32 @@ float3 MeshEdges_PS(float4 vpos:SV_Position, float2 texcoord:TexCoord):SV_Target
 
     //Get depth of center pixel
     float c = ReShade::GetLinearizedDepth(texcoord);
-
     //Get depth of surrounding pixels
-    float4 d = float4(  ReShade::GetLinearizedDepth(texcoord + float2(0.0, pix.w)),
-                        ReShade::GetLinearizedDepth(texcoord + float2(0.0, pix.y)),
-                        ReShade::GetLinearizedDepth(texcoord + float2(pix.x, 0.0)),
-                        ReShade::GetLinearizedDepth(texcoord + float2(pix.z, 0.0))   );
+    float4 depthEven = float4(  ReShade::GetLinearizedDepth(texcoord + float2(0.0, pix.w)),
+                                ReShade::GetLinearizedDepth(texcoord + float2(0.0, pix.y)),
+                                ReShade::GetLinearizedDepth(texcoord + float2(pix.x, 0.0)),
+                                ReShade::GetLinearizedDepth(texcoord + float2(pix.z, 0.0))   );
 
+    float4 depthOdd  = float4(  ReShade::GetLinearizedDepth(texcoord + float2(pix.x, pix.w)),
+                                ReShade::GetLinearizedDepth(texcoord + float2(pix.z, pix.y)),
+                                ReShade::GetLinearizedDepth(texcoord + float2(pix.x, pix.y)),
+                                ReShade::GetLinearizedDepth(texcoord + float2(pix.z, pix.w)) );
+    
     //Normalize values
-    float mind = MIN4(d);
-    float maxd = MAX4(d);
-    float span = max(c, maxd) - min(c, mind) + 0.00001;
+    float2 mind = float2(MIN4(depthEven), MIN4(depthOdd));
+    float2 maxd = float2(MAX4(depthEven), MAX4(depthOdd));
+    float span = MAX2(maxd) - MIN2(mind) + 0.00001;
     c /= span;
-    d /= span;
-
+    depthEven /= span;
+    depthOdd /= span;
     //Calculate the distance of the surrounding pixels to the center
-    float4 diffs = abs(d - c);
-
+    float4 diffsEven = abs(depthEven - c);
+    float4 diffsOdd = abs(depthOdd - c);
     //Calculate the difference of the distances
-    float2 diffs2 = float2(abs(diffs.x - diffs.y), abs(diffs.z - diffs.w));
+    float2 retVal = float2( max(abs(diffsEven.x - diffsEven.y), abs(diffsEven.z - diffsEven.w)),
+                            max(abs(diffsOdd.x - diffsOdd.y), abs(diffsOdd.z - diffsOdd.w))     );
 
-    return MAX2(diffs2);
+    return MAX2(retVal);
 }
 
 technique MeshEdges {
