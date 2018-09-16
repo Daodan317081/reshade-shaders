@@ -31,7 +31,7 @@ float3 MeshEdges_PS(float4 vpos:SV_Position, float2 texcoord:TexCoord):SV_Target
     //Calculate the distance of the surrounding pixels to the center
     float4 diffsEven = abs(depthEven - c);
     float4 diffsOdd = abs(depthOdd - c);
-    //Calculate the difference of the distances
+    //Calculate the difference of the (opposing) distances
     float2 retVal = float2( max(abs(diffsEven.x - diffsEven.y), abs(diffsEven.z - diffsEven.w)),
                             max(abs(diffsOdd.x - diffsOdd.y), abs(diffsOdd.z - diffsOdd.w))     );
 
