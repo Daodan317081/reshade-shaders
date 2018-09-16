@@ -36,12 +36,29 @@
 
 #include "ReShade.fxh"
 
+uniform bool bUIRawOutput <
+    ui_label = "Raw Output";
+> = true;
+
+uniform float3 fUIColor <
+    ui_type = "color";
+    ui_label = "Color";
+> = float3(0.0, 0.0, 0.0);
+
+uniform float fUIStrength <
+    ui_type = "drag";
+    ui_label = "Strength";
+    ui_min = 0.0; ui_max = 1.0;
+    ui_step = 0.01;
+> = 1.0;
+
 #define MAX2(v) max(v.x, v.y)
 #define MIN2(v) min(v.x, v.y)
 #define MAX4(v) max(v.x, max(v.y, max(v.z, v.w)))
 #define MIN4(v) min(v.x, min(v.y, min(v.z, v.w)))
 
 float3 MeshEdges_PS(float4 vpos:SV_Position, float2 texcoord:TexCoord):SV_Target {
+    float3 backbuffer = tex2D(ReShade::BackBuffer, texcoord).rgb;
     float4 pix = float4(ReShade::PixelSize, -ReShade::PixelSize);
 
     //Get depth of center pixel
@@ -71,7 +88,7 @@ float3 MeshEdges_PS(float4 vpos:SV_Position, float2 texcoord:TexCoord):SV_Target
     float2 retVal = float2( max(abs(diffsEven.x - diffsEven.y), abs(diffsEven.z - diffsEven.w)),
                             max(abs(diffsOdd.x - diffsOdd.y), abs(diffsOdd.z - diffsOdd.w))     );
 
-    return MAX2(retVal);
+    return bUIRawOutput ? MAX2(retVal) : lerp(backbuffer, fUIColor, MAX2(retVal) * fUIStrength);
 }
 
 technique MeshEdges {
