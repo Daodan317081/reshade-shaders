@@ -36,13 +36,20 @@
 
 #include "ReShade.fxh"
 
-uniform bool bUIRawOutput <
-    ui_label = "Raw Output";
-> = true;
+uniform int iUIBackground <
+    ui_type = "combo";
+    ui_label = "Background Type";
+    ui_items = "Backbuffer\0Color\0";
+> = 1;
 
-uniform float3 fUIColor <
+uniform float3 fUIColorBackground <
     ui_type = "color";
-    ui_label = "Color";
+    ui_label = "Color Background";
+> = float3(1.0, 1.0, 1.0);
+
+uniform float3 fUIColorLines <
+    ui_type = "color";
+    ui_label = "Color Lines";
 > = float3(0.0, 0.0, 0.0);
 
 uniform float fUIStrength <
@@ -88,7 +95,9 @@ float3 MeshEdges_PS(float4 vpos:SV_Position, float2 texcoord:TexCoord):SV_Target
     float2 retVal = float2( max(abs(diffsEven.x - diffsEven.y), abs(diffsEven.z - diffsEven.w)),
                             max(abs(diffsOdd.x - diffsOdd.y), abs(diffsOdd.z - diffsOdd.w))     );
 
-    return bUIRawOutput ? MAX2(retVal) : lerp(backbuffer, fUIColor, MAX2(retVal) * fUIStrength);
+    float lineWeight = MAX2(retVal);
+
+    return lerp(iUIBackground == 0 ? backbuffer : fUIColorBackground, fUIColorLines, lineWeight * fUIStrength);
 }
 
 technique MeshEdges {
