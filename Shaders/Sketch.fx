@@ -50,25 +50,20 @@
     Uniforms
 ******************************************************************************/
 uniform int iUILumaEdgeType <
-    ui_type = "combo";
+    ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
     ui_label = "Type";
-    ui_items = "DiffEdges\0Convolution\0";
+    ui_min = 0; ui_max = 2;
 > = 0;
 
-uniform int iUILumaKernel <
-    ui_type = "combo";
+uniform float fUILumaDetails <
+    ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
-    ui_label = "Kernel";
-    ui_items = "CONV_PREWITT\0CONV_PREWITT_FULL\0CONV_SOBEL\0CONV_SOBEL_FULL\0CONV_SCHARR\0CONV_SCHARR_FULL\0";
-> = 0;
-
-uniform int iUILumaMerge <
-	ui_type = "combo";
-    ui_category = UI_CATEGORY_LUMA;
-	ui_label = "Edge merge method";
-	ui_items = "CONV_MUL\0CONV_DOT\0CONV_X\0CONV_Y\0CONV_ADD\0CONV_MAX\0";
-> = 0;
+    ui_label = "Details";
+    ui_tooltip = "Only for Type 1 & 2";
+    ui_min = 0.0; ui_max = 1.0;
+    ui_step = 0.01;
+> = 1.0;
 
 uniform float fUILumaStrength <
     ui_type = "drag";
@@ -79,25 +74,20 @@ uniform float fUILumaStrength <
 > = 1.0;
 
 uniform int iUIChromaEdgeType <
-    ui_type = "combo";
+    ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
     ui_label = "Type";
-    ui_items = "DiffEdges\0Convolution\0";
-> = 0;
+    ui_min = 0; ui_max = 2;
+> = 1;
 
-uniform int iUIChromaKernel <
-    ui_type = "combo";
+uniform float fUIChromaDetails <
+    ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
-    ui_label = "Kernel";
-    ui_items = "CONV_PREWITT\0CONV_PREWITT_FULL\0CONV_SOBEL\0CONV_SOBEL_FULL\0CONV_SCHARR\0CONV_SCHARR_FULL\0";
-> = 0;
-
-uniform int iUIChromaMerge <
-	ui_type = "combo";
-    ui_category = UI_CATEGORY_CHROMA;
-	ui_label = "Edge merge method";
-	ui_items = "CONV_MUL\0CONV_DOT\0CONV_X\0CONV_Y\0CONV_ADD\0CONV_MAX\0";
-> = 0;
+    ui_label = "Details";
+    ui_tooltip = "Only for Type 1 & 2";
+    ui_min = 0.0; ui_max = 1.0;
+    ui_step = 0.01;
+> = 1.0;
 
 uniform float fUIChromaStrength <
     ui_type = "drag";
@@ -286,6 +276,21 @@ float DiffEdges(sampler s, int2 vpos) {
     return saturate((diffs.x + diffs.y + diffs.z + diffs.w) * (1.0 - valC));
 }
 
+float3 Convolution(sampler s, int2 vpos, float kernel1[9], float kernel2[9], float weight, float divisor) {
+    float3 acc;
+
+    [unroll]
+    for(int m = 0; m < 3; m++) {
+        [unroll]
+        for(int n = 0; n < 3; n++) {
+            float k = lerp(kernel1[n + (m*3)], kernel2[n + (m*3)], weight);
+            acc += k * tex2Dfetch(s, int4( (vpos.x - 1 + n), (vpos.y - 1 + m), 0, 0)).rgb;
+        }
+    }
+
+    return acc / divisor;
+}
+
 float3 DepthEdges(float2 texcoord, float2 bias) {
     float retVal;
     if(iUIDepthEdgesType == 0) {
@@ -356,12 +361,26 @@ float3 DrawDebugCurve(float3 background, float2 texcoord, float value, float3 co
     return lerp(background, color, saturate(p));
 }
 
-float GetEdges(sampler2D s, float2 texcoord, int2 vpos, int type, int kernel, int merge) {
+float GetEdges(sampler2D s, int2 vpos, int type, float detail) {
     float edges;
     if(type == 0)
         edges = DiffEdges(s, vpos.xy);
-    else
-        edges = Tools::Convolution::Edges(s, vpos.xy, kernel, merge).r;
+    else {
+        static const float Sobel_X[9]       = { 1.0,  0.0, -1.0,  2.0, 0.0, -2.0, 1.0,  0.0, -1.0};
+        static const float Sobel_Y[9]       = { 1.0,  2.0,  1.0,  0.0, 0.0,  0.0,-1.0, -2.0, -1.0};
+        static const float Sobel_X_M[9]     = {-1.0,  0.0,  1.0, -2.0, 0.0,  2.0,-1.0,  0.0,  1.0};
+        static const float Sobel_Y_M[9]     = {-1.0, -2.0, -1.0,  0.0, 0.0,  0.0, 1.0,  2.0,  1.0};
+        static const float Scharr_X[9]      = { 3.0,  0.0, -3.0, 10.0, 0.0,-10.0, 3.0,  0.0, -3.0};
+        static const float Scharr_Y[9]      = { 3.0, 10.0,  3.0,  0.0, 0.0,  0.0,-3.0,-10.0, -3.0};
+        static const float Scharr_X_M[9]    = {-3.0,  0.0,  3.0,-10.0, 0.0, 10.0,-3.0,  0.0,  3.0};
+        static const float Scharr_Y_M[9]    = {-3.0,-10.0, -3.0,  0.0, 0.0,  0.0, 3.0, 10.0,  3.0};
+        edges = Convolution(s, vpos.xy, Sobel_X, Scharr_X, detail, 1.0).r;
+        edges = max(edges, Convolution(s, vpos.xy, Sobel_Y, Scharr_Y, detail, 1.0).r);
+        if(type == 2) {
+            edges = max(edges, Convolution(s, vpos.xy, Sobel_X_M, Scharr_X_M, detail, 1.0).r);
+            edges = max(edges, Convolution(s, vpos.xy, Sobel_Y_M, Scharr_Y_M, detail, 1.0).r);
+        }
+    }
 
     return edges;
 }
@@ -391,8 +410,8 @@ float3 Sketch_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Tar
     float currentDepth = ReShade::GetLinearizedDepth(texcoord);
     
     float4 edges = 2.0 * float4(
-                            fUILumaStrength   * GetEdges(SamplerSketchLuma, texcoord, vpos.xy, iUILumaEdgeType, iUILumaKernel, iUILumaMerge),
-                            fUIChromaStrength * GetEdges(SamplerSketchChroma, texcoord, vpos.xy, iUIChromaEdgeType, iUIChromaKernel, iUIChromaMerge),
+                            fUILumaStrength   * GetEdges(SamplerSketchLuma, vpos.xy, iUILumaEdgeType, fUILumaDetails),
+                            fUIChromaStrength * GetEdges(SamplerSketchChroma, vpos.xy, iUIChromaEdgeType, fUIChromaDetails),
                             fUIDepthStrength  * DepthEdges(texcoord, fUIDepthBias).r,
                             fUIGridStrength   * MeshGrid(texcoord)
                         );
