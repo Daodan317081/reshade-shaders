@@ -128,6 +128,11 @@ uniform float fUIGridStrength <
     ui_step = 0.01;
 > = 1.0;
 
+uniform bool bUIOverlayFadingCurves<
+    ui_label = "Show Curves";
+    ui_category = UI_CATEGORY_MISC;
+> = false;
+
 uniform float3 fUIOutlinesDistanceFading<
     ui_type = "drag";
     ui_category = UI_CATEGORY_MISC;
@@ -172,11 +177,6 @@ uniform float3 fUIEdgesSaturationFading <
 > = float3(0.0, 1.0, 0.8);
 
 ////////////////////////// Debug //////////////////////////
-
-uniform bool bUIOverlayFadingCurves<
-    ui_label = "Show Curves";
-    ui_category = UI_CATEGORY_DEBUG;
-> = false;
 
 uniform float3 fUIDepthOutlinesCurveColor<
     ui_type = "color";
