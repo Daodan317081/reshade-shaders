@@ -17,12 +17,15 @@ uniform float fUIOverlayScale <
 float3 HotsamplingHelperPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
     float2 coord;
 
-    if(texcoord.x >= (iUIOverlayPos.x / BUFFER_WIDTH) &&
-       texcoord.y >= (iUIOverlayPos.y / BUFFER_HEIGHT) &&
-       texcoord.x <  (iUIOverlayPos.x / BUFFER_WIDTH) + fUIOverlayScale &&
-       texcoord.y <  (iUIOverlayPos.y / BUFFER_HEIGHT + fUIOverlayScale))
+    int2 overlayPos = int2(clamp(iUIOverlayPos.x, 0, BUFFER_WIDTH * (1.0 - fUIOverlayScale)),
+                           clamp(iUIOverlayPos.y, 0, BUFFER_HEIGHT * (1.0 - fUIOverlayScale)));
+
+    if(vpos.x >= overlayPos.x &&
+       vpos.y >= overlayPos.y &&
+       vpos.x <  overlayPos.x + BUFFER_WIDTH * fUIOverlayScale &&
+       vpos.y <  overlayPos.y + BUFFER_HEIGHT * fUIOverlayScale)
     {
-        coord = frac((texcoord - iUIOverlayPos / float2(BUFFER_WIDTH, BUFFER_HEIGHT)) / fUIOverlayScale);
+        coord = frac((texcoord - overlayPos / float2(BUFFER_WIDTH, BUFFER_HEIGHT)) / fUIOverlayScale);
     }
     else
     {
@@ -32,7 +35,7 @@ float3 HotsamplingHelperPS(float4 vpos : SV_Position, float2 texcoord : TexCoord
     return tex2D(ReShade::BackBuffer, coord).rgb;
 }
 
-technique HotsamplingHelper2 {
+technique HotsamplingHelper {
     pass {
         VertexShader = PostProcessVS;
         PixelShader = HotsamplingHelperPS;
