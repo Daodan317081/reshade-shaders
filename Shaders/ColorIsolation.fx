@@ -39,12 +39,13 @@
 #define COLORISOLATION_CATEGORY_SETUP "Setup"
 #define COLORISOLATION_CATEGORY_DEBUG "Debug"
 
-uniform float3 fUITargetHue<
-    ui_type = "color";
+uniform float fUITargetHue<
+    ui_type = "drag";
     ui_category = COLORISOLATION_CATEGORY_SETUP;
     ui_label = "Target Hue";
-    ui_tooltip = "Use the vertical slider from the color-control\nto select the hue that should be isolated.\nOr right-click and set input to HSV.\nSaturation and value are ignored.";
-> = float3(1.0, 0.0, 0.0);
+    ui_tooltip = "Set the desired hue from 0 - 360";
+    ui_min = 0.0; ui_max = 360.0; ui_step = 0.5;
+> = 0.0;
 
 uniform int cUIWindowFunction<
     ui_type = "combo";
@@ -168,14 +169,14 @@ float CalculateValue(float x, float height, float offset, float overlap) {
 float3 ColorIsolationPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
     float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
     float3 luma = dot(color, float3(0.2126, 0.7151, 0.0721)).rrr;
-    float value = CalculateValue(RGBtoHSV(color).x, fUIWindowHeight, RGBtoHSV(fUITargetHue).x, fUIOverlap);
+    float value = CalculateValue(RGBtoHSV(color).x, fUIWindowHeight, fUITargetHue / 360.0, fUIOverlap);
     if(bUIShowDiff)
         return value.rrr;
     return lerp(luma, color, value);
 }
 
 float3 DrawOverlayPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
-    float value = CalculateValue(texcoord.x, fUIWindowHeight, RGBtoHSV(fUITargetHue).x, fUIOverlap);
+    float value = CalculateValue(texcoord.x, fUIWindowHeight, fUITargetHue / 360.0, fUIOverlap);
     float3 hsvStrip = HSVtoRGB(float3(texcoord.x, 1.0, 1.0));
     float3 luma = dot(hsvStrip, float3(0.2126, 0.7151, 0.0721));
     float3 color = lerp(luma, hsvStrip, value);
