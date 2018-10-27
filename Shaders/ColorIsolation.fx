@@ -58,7 +58,7 @@ uniform float fUIOverlap<
     ui_type = "drag";
     ui_category = COLORISOLATION_CATEGORY_SETUP;
     ui_label = "Hue Overlap";
-    ui_tooltip = "Changes the width of the gaussian curve\nto include less or more colors in relation\nto the target hue.\n";
+    ui_tooltip = "Changes the width of the curve\nto include less or more colors in relation\nto the target hue.\n";
     ui_min = 0.001; ui_max = 2.0;
     ui_step = 0.001;
 > = 0.3;
@@ -71,7 +71,7 @@ uniform float fUIWindowHeight<
     ui_step = 0.01;
 > = 1.0;
 
-uniform int cUIType<
+uniform int iUIType<
     ui_type = "combo";
     ui_category = COLORISOLATION_CATEGORY_SETUP;
     ui_label = "Isolate / Reject Hue";
@@ -93,7 +93,7 @@ uniform int4 iUIOverlay <
     ui_category = COLORISOLATION_CATEGORY_DEBUG;
     ui_label = "Overlay: Position, Size";
     ui_tooltip = "x: x-position\ny: y-position\nz: width\nw: height";
-    ui_min = 0; ui_max = BUFFER_WIDTH;
+    ui_min = 50; ui_max = BUFFER_WIDTH;
     ui_step = 1;
 > = int4(0, 0, 600, 100);
 
@@ -144,7 +144,7 @@ float CalculateValue(float x, float height, float offset, float overlap) {
         retVal = saturate(TRIANGLE(x-1.0, height, offset, overlap) + TRIANGLE(x, height, offset, overlap) + TRIANGLE(x+1.0, height, offset, overlap));
     }
     
-    if(cUIType == 1)
+    if(iUIType == 1)
         return 1.0 - retVal;
     
     return retVal;
