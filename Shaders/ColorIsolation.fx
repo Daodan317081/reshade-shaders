@@ -43,7 +43,7 @@ uniform float fUITargetHue<
     ui_type = "drag";
     ui_category = COLORISOLATION_CATEGORY_SETUP;
     ui_label = "Target Hue";
-    ui_tooltip = "Set the desired hue from 0 - 360";
+    ui_tooltip = "Set the desired hue.\nEnable \"Show Debug Overlay\" for visualization.";
     ui_min = 0.0; ui_max = 360.0; ui_step = 0.5;
 > = 0.0;
 
@@ -83,48 +83,27 @@ uniform bool bUIShowDiff <
     ui_label = "Show Hue Difference";
 > = false;
 
-uniform int2 iUIOverlayPosition <
+uniform bool bUIShowDebugOverlay <
+    ui_label = "Show Debug Overlay";
+    ui_category = COLORISOLATION_CATEGORY_DEBUG;
+> = false;
+
+uniform int4 iUIOverlay <
     ui_type = "drag";
     ui_category = COLORISOLATION_CATEGORY_DEBUG;
-    ui_label = "Overlay Position";
+    ui_label = "Overlay: Position, Size";
+    ui_tooltip = "x: x-position\ny: y-position\nz: width\nw: height";
     ui_min = 0; ui_max = BUFFER_WIDTH;
     ui_step = 1;
-> = int2(0, 0);
+> = int4(0, 0, 600, 100);
 
-uniform float iUIOverlayOpacity <
+uniform float fUIOverlayOpacity <
     ui_type = "drag";
     ui_category = COLORISOLATION_CATEGORY_DEBUG;
     ui_label = "Overlay Opacity";
     ui_min = 0.0; ui_max = 1.0;
     ui_step = 0.01;
 > = 1.0;
-
-texture2D texColorIsolationOverlay { Width = BUFFER_WIDTH/2; Height = BUFFER_HEIGHT/6; Format = RGBA8; };
-sampler2D sColorIsolationOverlay { Texture = texColorIsolationOverlay; };
-
-float3 DrawTexture(float3 image, sampler overlay, float2 texcoord, int2 offset, float opacity) {
-    float3 retVal;
-    float3 col = image;
-    float fac = 0.0;
-
-    float2 screencoord = float2(BUFFER_WIDTH, BUFFER_HEIGHT) * texcoord;
-    float2 overlay_size = (float2)tex2Dsize(overlay, 0);
-    offset.x = clamp(offset.x, 0, BUFFER_WIDTH - overlay_size.x);
-    offset.y = clamp(offset.y, 0, BUFFER_HEIGHT - overlay_size.y);
-    float2 border_min = (float2)offset;
-    float2 border_max = border_min + overlay_size;
-
-    if( screencoord.x <= border_max.x &&
-        screencoord.y <= border_max.y &&
-        screencoord.x >= border_min.x &&
-        screencoord.y >= border_min.y   ) {
-            fac = opacity;
-            float2 coord_overlay = (screencoord - border_min) / overlay_size;
-            col = tex2D(overlay, coord_overlay).rgb;
-    }
-
-    return lerp(image, col, fac);
-}
 
 //These RGB/HSV conversion functions are based on the blogpost from:
 //http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
@@ -142,6 +121,11 @@ float3 HSVtoRGB(float3 c) {
     float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
+}
+
+float Map(float value, float2 span_old, float2 span_new) {
+    float span_old_diff = abs(span_old.y - span_old.x) < 1e-6 ? 1e-6 : span_old.y - span_old.x;
+    return lerp(span_new.x, span_new.y, (clamp(value, span_old.x, span_old.y)-span_old.x)/(span_old_diff));
 }
 
 #define GAUSS(x,height,offset,overlap) (height * exp(-((x - offset) * (x - offset)) / (2 * overlap * overlap)))
@@ -166,47 +150,46 @@ float CalculateValue(float x, float height, float offset, float overlap) {
     return retVal;
 }
 
+float3 DrawDebugOverlay(float3 background, float3 param, int2 pos, int2 size, float opacity, int2 vpos, float2 texcoord) {
+    float x, y;
+    float3 overlay;
+
+    pos.xy = int2(clamp(pos.x, 0, BUFFER_WIDTH - size.x), clamp(pos.y, 0, BUFFER_HEIGHT - size.y));
+
+    if( vpos.x >= pos.x &&
+        vpos.x < pos.x + size.x &&
+        vpos.y >= pos.y &&
+        vpos.y < pos.y + size.y)
+    {
+        x = Map(texcoord.x, float2(pos.x, pos.x + size.x) / BUFFER_WIDTH, float2(0.0, 1.0));
+        y = Map(texcoord.y, float2(pos.y, pos.y + size.y) / BUFFER_HEIGHT, float2(0.0, 1.0));
+        float3 hsvStrip = HSVtoRGB(float3(x, 1.0, 1.0));
+        float3 luma = dot(hsvStrip, float3(0.2126, 0.7151, 0.0721));
+        float value = CalculateValue(x, param.z, param.x, 1.0 - param.y);
+        overlay = lerp(luma, hsvStrip, value);
+        overlay = lerp(overlay, 0.0.rrr, exp(-size.y * length(float2(x, 1.0 - y) - float2(x, value))));
+        background = lerp(background, overlay, opacity);
+    }
+
+    return background;
+}
+
 float3 ColorIsolationPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
     float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
     float3 luma = dot(color, float3(0.2126, 0.7151, 0.0721)).rrr;
-    float value = CalculateValue(RGBtoHSV(color).x, fUIWindowHeight, fUITargetHue / 360.0, fUIOverlap);
+    float3 param = float3(fUITargetHue / 360.0, fUIOverlap, fUIWindowHeight);
+    float value = CalculateValue(RGBtoHSV(color).x, param.z, param.x, 1.0 - param.y);
+    float3 retVal = lerp(luma, color, value);
+
     if(bUIShowDiff)
-        return value.rrr;
-    return lerp(luma, color, value);
-}
-
-float3 DrawOverlayPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
-    float value = CalculateValue(texcoord.x, fUIWindowHeight, fUITargetHue / 360.0, fUIOverlap);
-    float3 hsvStrip = HSVtoRGB(float3(texcoord.x, 1.0, 1.0));
-    float3 luma = dot(hsvStrip, float3(0.2126, 0.7151, 0.0721));
-    float3 color = lerp(luma, hsvStrip, value);
-    color = lerp(color, 0.0.rrr, exp(-BUFFER_HEIGHT/6 * length(float2(texcoord.x, 1.0 - texcoord.y) - float2(texcoord.x, value))));
-    return color;
-}
-
-float3 DrawTexturePS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
-    float3 backbuffer = tex2D(ReShade::BackBuffer, texcoord).rgb;
-    float3 overlay = backbuffer;
-    float fac = 0.0;
-
-    float2 overlay_size = (float2)tex2Dsize(sColorIsolationOverlay, 0);
-    int2 offset;
-    offset.x = clamp(iUIOverlayPosition.x, 0, BUFFER_WIDTH - overlay_size.x);
-    offset.y = clamp(iUIOverlayPosition.y, 0, BUFFER_HEIGHT - overlay_size.y);
-    float2 border_min = (float2)offset;
-    float2 border_max = border_min + overlay_size;
-
-    float2 screencoord = float2(BUFFER_WIDTH, BUFFER_HEIGHT) * texcoord;
-    if( screencoord.x <= border_max.x &&
-        screencoord.y <= border_max.y &&
-        screencoord.x >= border_min.x &&
-        screencoord.y >= border_min.y   ) {
-            fac = iUIOverlayOpacity;
-            float2 coord_overlay = (screencoord - border_min) / overlay_size;
-            overlay = tex2D(sColorIsolationOverlay, coord_overlay).rgb;
+        retVal = value.rrr;
+    
+    if(bUIShowDebugOverlay)
+    {
+        retVal = DrawDebugOverlay(retVal, param, iUIOverlay.xy, iUIOverlay.zw, fUIOverlayOpacity, vpos.xy, texcoord);
     }
 
-    return lerp(backbuffer, overlay, fac);
+    return retVal;
 }
 
 technique ColorIsolation {
@@ -214,17 +197,5 @@ technique ColorIsolation {
         VertexShader = PostProcessVS;
         PixelShader = ColorIsolationPS;
         /* RenderTarget = BackBuffer */
-    }
-}
-
-technique ColorIsolationDebug {
-    pass {
-        VertexShader = PostProcessVS;
-        PixelShader = DrawOverlayPS;
-        RenderTarget = texColorIsolationOverlay;
-    }
-    pass {
-        VertexShader = PostProcessVS;
-        PixelShader = DrawTexturePS;
     }
 }
