@@ -56,6 +56,7 @@
 /******************************************************************************
     Uniforms
 ******************************************************************************/
+////////////////////////// Luma //////////////////////////
 uniform int iUILumaEdgeType <
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
@@ -94,7 +95,7 @@ uniform bool bUILumaEdgesOverlay <
     ui_category = UI_CATEGORY_LUMA;
 > = false;
 
-
+////////////////////////// Chroma //////////////////////////
 uniform int iUIChromaEdgeType <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
@@ -133,7 +134,7 @@ uniform bool bUIChromaEdgesOverlay <
     ui_category = UI_CATEGORY_CHROMA;
 > = false;
 
-
+////////////////////////// Outlines //////////////////////////
 uniform int iUIOutlinesEdgesType <
     ui_type = "combo";
     ui_category = UI_CATEGORY_OUTLINES;
@@ -171,6 +172,7 @@ uniform bool bUIOutlinesOverlay <
     ui_category = UI_CATEGORY_OUTLINES;
 > = false;
 
+////////////////////////// Grid //////////////////////////
 uniform float2 fUIGridBias<
     ui_type = "drag";
     ui_category = UI_CATEGORY_GRID;
@@ -201,7 +203,7 @@ uniform bool bUIGridOverlay <
     ui_category = UI_CATEGORY_GRID;
 > = false;
 
-
+////////////////////////// Misc //////////////////////////
 uniform float3 fUIEdgesLumaFading <
     ui_type = "drag";
     ui_category = UI_CATEGORY_MISC;
@@ -218,27 +220,28 @@ uniform float3 fUIEdgesSaturationFading <
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
+uniform bool bUILumaOverlay <
+    ui_label = "Show Luma Weight";
+    ui_category = UI_CATEGORY_MISC;
+> = false;
+
+uniform bool bUISaturationOverlay <
+    ui_label = "Show Saturation Weight";
+    ui_category = UI_CATEGORY_MISC;
+> = false;
+
 ////////////////////////// Debug //////////////////////////
 
 uniform float3 fUIOverlayColor<
     ui_type = "color";
     ui_category = UI_CATEGORY_DEBUG;
-    ui_label = "Overlay Curve Color";
+    ui_label = "Overlay Color";
 > = float3(1.0, 0.0, 0.0);
 
-uniform int iUIDebugMaps <
-    ui_type = "combo";
-    ui_category = UI_CATEGORY_DEBUG;
-    ui_label = "Show Debug Maps";
-    ui_items = "Off\0"
-               "Luma Edges\0"
-               "Chroma Edges\0"
-               "Outlines\0"
-               "Grid\0"
-               "Sketck Layer\0"
-               "Luma Weight\0"
-               "Saturation Weight\0";
-> = 0;
+uniform bool bUIShowSketchLayer <
+    ui_label = "Show Sketch Layer";
+    ui_category = UI_CATEGORY_MISC;
+> = false;
 
 ////////////////////////// Effect //////////////////////////
 
@@ -247,13 +250,6 @@ uniform float3 fUIColor <
     ui_category = UI_CATEGORY_EFFECT;
     ui_label = "Color";
 > = float3(0.0, 0.0, 0.0);
-
-uniform int iUIStyle <
-    ui_type = "combo";
-    ui_category = UI_CATEGORY_EFFECT;
-    ui_label = "Style";
-    ui_items = "Default\0Depth Buffer\0";
-> = 0;
 
 uniform float fUIStrength <
     ui_type = "drag";
@@ -452,25 +448,7 @@ float3 Sketch_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Tar
 
     float edgeLayer = MAX4(edges);
 
-    if(iUIStyle == 1)
-        color = currentDepth.rrr;
-
     float3 result = saturate(lerp(color, fUIColor, edgeLayer * fUIStrength));
-
-    if(iUIDebugMaps == 1)
-        result = 1.0 - edges.xxx;
-    else if(iUIDebugMaps == 2)
-        result = 1.0 - edges.yyy;
-    else if(iUIDebugMaps == 3)
-        result = 1.0 - edges.zzz;
-    else if(iUIDebugMaps == 4)
-        result = 1.0 - edges.www;
-    else if(iUIDebugMaps == 5)
-        result = 1.0 - edgeLayer.rrr;
-    else if(iUIDebugMaps == 6)
-        result = luma;
-    else if(iUIDebugMaps == 7)
-        result = GetSaturation(color).rrr;
 
     if(bUILumaEdgesOverlay)
         result = lerp(fUIOverlayColor, 1.0 - edges.xxx, fadeDist.x * fUIOutlinesStrength);
@@ -480,6 +458,12 @@ float3 Sketch_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Tar
         result = lerp(fUIOverlayColor, 1.0 - edges.zzz, fadeDist.z * fUIOutlinesStrength);
     else if(bUIGridOverlay)
         result = lerp(fUIOverlayColor, 1.0 - edges.www, fadeDist.w * fUIGridStrength);
+    else if(bUILumaOverlay)
+        result = fadeAll.xxx;
+    else if(bUISaturationOverlay)
+        result = fadeAll.yyy;
+    else if(bUIShowSketchLayer)
+        result = 1.0 - edgeLayer.rrr;
 
     return result;
 }
