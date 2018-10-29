@@ -39,12 +39,19 @@
 
 #define UI_CATEGORY_LUMA "Luma"
 #define UI_CATEGORY_CHROMA "Chroma"
-#define UI_CATEGORY_DEPTH "Depth"
+#define UI_CATEGORY_OUTLINES "Outlines"
 #define UI_CATEGORY_GRID "Grid"
 #define UI_CATEGORY_MISC "Misc"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
 
+#define UI_EDGES_LABEL_TYPE "Type"
+#define UI_EDGES_LABEL_DETAILS "Details"
+#define UI_EDGES_LABEL_STRENGTH "Strength"
+#define UI_EDGES_LABEL_DISTANCE_STRENGTH "Distance Strength"
+#define UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP "x: Fade Out Near\ny: Fade Out Far\nz: Transistion Strength"
+#define UI_EDGES_LABEL_DEBUG "Debug"
+//#define UI_EDGES_LABEL_ ""
 
 /******************************************************************************
     Uniforms
@@ -52,14 +59,14 @@
 uniform int iUILumaEdgeType <
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
-    ui_label = "Type";
+    ui_label = UI_EDGES_LABEL_TYPE;
     ui_min = 0; ui_max = 2;
 > = 0;
 
 uniform float fUILumaDetails <
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
-    ui_label = "Details";
+    ui_label = UI_EDGES_LABEL_DETAILS;
     ui_tooltip = "Only for Type 1 & 2";
     ui_min = 0.0; ui_max = 1.0;
     ui_step = 0.01;
@@ -68,22 +75,37 @@ uniform float fUILumaDetails <
 uniform float fUILumaStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
-    ui_label = "Strength";
+    ui_label = UI_EDGES_LABEL_STRENGTH;
     ui_min = 0.0; ui_max = 1.0;
     ui_step = 0.01;
 > = 1.0;
 
+uniform float3 fUILumaEdgesDistanceFading<
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_LUMA;
+    ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
+    ui_tooltip = UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP;
+    ui_min = -1.0; ui_max = 1.0;
+    ui_step = 0.001;
+> = float3(0.0, 1.0, 0.8);
+
+uniform bool bUILumaEdgesOverlay <
+    ui_label = UI_EDGES_LABEL_DEBUG;
+    ui_category = UI_CATEGORY_LUMA;
+> = false;
+
+
 uniform int iUIChromaEdgeType <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
-    ui_label = "Type";
+    ui_label = UI_EDGES_LABEL_TYPE;
     ui_min = 0; ui_max = 2;
 > = 1;
 
 uniform float fUIChromaDetails <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
-    ui_label = "Details";
+    ui_label = UI_EDGES_LABEL_DETAILS;
     ui_tooltip = "Only for Type 1 & 2";
     ui_min = 0.0; ui_max = 1.0;
     ui_step = 0.01;
@@ -92,73 +114,93 @@ uniform float fUIChromaDetails <
 uniform float fUIChromaStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
-    ui_label = "Strength";
+    ui_label = UI_EDGES_LABEL_STRENGTH;
     ui_min = 0.0; ui_max = 1.0;
     ui_step = 0.01;
 > = 1.0;
 
-uniform int iUIDepthEdgesType <
+uniform float3 fUIChromaEdgesDistanceFading<
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_CHROMA;
+    ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
+    ui_tooltip = UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP;
+    ui_min = -1.0; ui_max = 1.0;
+    ui_step = 0.001;
+> = float3(0.0, 1.0, 0.8);
+
+uniform bool bUIChromaEdgesOverlay <
+    ui_label = UI_EDGES_LABEL_DEBUG;
+    ui_category = UI_CATEGORY_CHROMA;
+> = false;
+
+
+uniform int iUIOutlinesEdgesType <
     ui_type = "combo";
-    ui_category = UI_CATEGORY_DEPTH;
-    ui_label = "Type";
+    ui_category = UI_CATEGORY_OUTLINES;
+    ui_label = UI_EDGES_LABEL_TYPE;
     ui_items = "Normal Vector\0Diffs\0";
 > = 0;
 
-uniform float2 fUIDepthBias<
+uniform float2 fUIOutlinesBias<
     ui_type = "drag";
-    ui_category = UI_CATEGORY_DEPTH;
-    ui_label = "Depth Outlines Bias";
+    ui_category = UI_CATEGORY_OUTLINES;
+    ui_label = "Bias";
     ui_min = 0.0; ui_max = 10.0;
     ui_step = 0.01;
 > = float2(7.0, 2.9);
 
-uniform float fUIDepthStrength <
+uniform float fUIOutlinesStrength <
     ui_type = "drag";
-    ui_category = UI_CATEGORY_DEPTH;
-    ui_label = "Strength";
+    ui_category = UI_CATEGORY_OUTLINES;
+    ui_label = UI_EDGES_LABEL_STRENGTH;
     ui_min = 0.0; ui_max = 1.0;
     ui_step = 0.01;
 > = 1.0;
+
+uniform float3 fUIOutlinesDistanceFading<
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_OUTLINES;
+    ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
+    ui_tooltip = UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP;
+    ui_min = -1.0; ui_max = 1.0;
+    ui_step = 0.001;
+> = float3(0.0, 1.0, 0.8);
+
+uniform bool bUIOutlinesOverlay <
+    ui_label = UI_EDGES_LABEL_DEBUG;
+    ui_category = UI_CATEGORY_OUTLINES;
+> = false;
+
+uniform float2 fUIGridBias<
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_GRID;
+    ui_label = "Bias";
+    ui_min = 0.0; ui_max = 10.0;
+    ui_step = 0.01;
+> = float2(7.0, 2.9);
 
 uniform float fUIGridStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_GRID;
-    ui_label = "Strength";
+    ui_label = UI_EDGES_LABEL_STRENGTH;
     ui_min = 0.0; ui_max = 1.0;
     ui_step = 0.01;
 > = 1.0;
 
-uniform bool bUIOverlayFadingCurves<
-    ui_label = "Show Curves";
-    ui_category = UI_CATEGORY_MISC;
-> = false;
-
-uniform float3 fUIOutlinesDistanceFading<
-    ui_type = "drag";
-    ui_category = UI_CATEGORY_MISC;
-    ui_label = "Fade outlines in/out with distance";
-    ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
-    ui_min = -1.0; ui_max = 1.0;
-    ui_step = 0.001;
-> = float3(0.0, 1.0, 0.8);
-
 uniform float3 fUIGridDistanceFading<
     ui_type = "drag";
-    ui_category = UI_CATEGORY_MISC;
-    ui_label = "Fade grid in/out with distance";
-    ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
+    ui_category = UI_CATEGORY_GRID;
+    ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
+    ui_tooltip = UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP;
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
-uniform float3 fUIEdgesDistanceFading<
-    ui_type = "drag";
-    ui_category = UI_CATEGORY_MISC;
-    ui_label = "Fade edges in/out with distance";
-    ui_tooltip = "x: Fade Out Start\ny: Fade Out End\nz: Curve Steepness";
-    ui_min = -1.0; ui_max = 1.0;
-    ui_step = 0.001;
-> = float3(0.0, 1.0, 0.8);
+uniform bool bUIGridOverlay <
+    ui_label = UI_EDGES_LABEL_DEBUG;
+    ui_category = UI_CATEGORY_GRID;
+> = false;
+
 
 uniform float3 fUIEdgesLumaFading <
     ui_type = "drag";
@@ -178,43 +220,11 @@ uniform float3 fUIEdgesSaturationFading <
 
 ////////////////////////// Debug //////////////////////////
 
-uniform float3 fUIDepthOutlinesCurveColor<
+uniform float3 fUIOverlayColor<
     ui_type = "color";
     ui_category = UI_CATEGORY_DEBUG;
-    ui_label = "Outlines Fading Curve Color";
+    ui_label = "Overlay Curve Color";
 > = float3(1.0, 0.0, 0.0);
-
-uniform float3 fUIGridCurveColor<
-    ui_type = "color";
-    ui_category = UI_CATEGORY_DEBUG;
-    ui_label = "Grid Fading Curve Color";
-> = float3(0.0, 1.0, 0.0);
-
-uniform float3 fUIEdgesCurveColor<
-    ui_type = "color";
-    ui_category = UI_CATEGORY_DEBUG;
-    ui_label = "Edges Fading Curve Color";
-> = float3(0.0, 0.0, 1.0);
-
-uniform float3 fUILumaCurveColor<
-    ui_type = "color";
-    ui_category = UI_CATEGORY_DEBUG;
-    ui_label = "Luma Weight Curve Color";
-> = float3(0.0, 1.0, 1.0);
-
-uniform float3 fUISaturationCurveColor<
-    ui_type = "color";
-    ui_category = UI_CATEGORY_DEBUG;
-    ui_label = "Saturation Weight Curve Color";
-> = float3(1.0, 0.5, 0.0);
-
-uniform float fUICurveWidth<
-    ui_type = "drag";
-    ui_category = UI_CATEGORY_DEBUG;
-    ui_label = "Curve Width";
-    ui_min = 1.0; ui_max = 10.0;
-    ui_step = 0.1;
-> = 2.0;
 
 uniform int iUIDebugMaps <
     ui_type = "combo";
@@ -224,13 +234,26 @@ uniform int iUIDebugMaps <
                "Luma Edges\0"
                "Chroma Edges\0"
                "Outlines\0"
-               "Mesh Grid\0"
-               "All\0"
-               "Luma\0"
-               "Saturation\0";
+               "Grid\0"
+               "Sketck Layer\0"
+               "Luma Weight\0"
+               "Saturation Weight\0";
 > = 0;
 
 ////////////////////////// Effect //////////////////////////
+
+uniform float3 fUIColor <
+    ui_type = "color";
+    ui_category = UI_CATEGORY_EFFECT;
+    ui_label = "Color";
+> = float3(0.0, 0.0, 0.0);
+
+uniform int iUIStyle <
+    ui_type = "combo";
+    ui_category = UI_CATEGORY_EFFECT;
+    ui_label = "Style";
+    ui_items = "Default\0Depth Buffer\0";
+> = 0;
 
 uniform float fUIStrength <
     ui_type = "drag";
@@ -247,8 +270,6 @@ texture2D texSketchLuma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format =
 sampler2D SamplerSketchLuma { Texture = texSketchLuma; };
 texture2D texSketchChroma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
 sampler2D SamplerSketchChroma { Texture = texSketchChroma; };
-texture2D texSketchDepth { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = R16F; };
-sampler2D SamplerSketchDepth { Texture = texSketchDepth; };
 
 /******************************************************************************
     Functions
@@ -293,7 +314,7 @@ float3 Convolution(sampler s, int2 vpos, float kernel1[9], float kernel2[9], flo
 
 float3 DepthEdges(float2 texcoord, float2 bias) {
     float retVal;
-    if(iUIDepthEdgesType == 0) {
+    if(iUIOutlinesEdgesType == 0) {
         float3 offset = float3(ReShade::PixelSize.xy, 0.0);
         float2 posCenter = texcoord.xy;
         float2 posNorth = posCenter - offset.zy;
@@ -315,7 +336,7 @@ float3 DepthEdges(float2 texcoord, float2 bias) {
     return saturate(retVal.rrr);
 }
 
-float MeshGrid(float2 texcoord) {
+float MeshGrid(float2 texcoord, float2 bias) {
     float4 pix = float4(ReShade::PixelSize, -ReShade::PixelSize);
 
     //Get depth of center pixel
@@ -347,7 +368,7 @@ float MeshGrid(float2 texcoord) {
 
     float lineWeight = MAX2(retVal);
 
-    return lineWeight;
+    return saturate(exp(bias.x * lineWeight - bias.y));
 }
 
 float StrengthCurve(float3 fade, float depth) {
@@ -412,25 +433,29 @@ float3 Sketch_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Tar
     float4 edges = 2.0 * float4(
                             fUILumaStrength   * GetEdges(SamplerSketchLuma, vpos.xy, iUILumaEdgeType, fUILumaDetails),
                             fUIChromaStrength * GetEdges(SamplerSketchChroma, vpos.xy, iUIChromaEdgeType, fUIChromaDetails),
-                            fUIDepthStrength  * DepthEdges(texcoord, fUIDepthBias).r,
-                            fUIGridStrength   * MeshGrid(texcoord)
+                            fUIOutlinesStrength  * DepthEdges(texcoord, fUIOutlinesBias).r,
+                            fUIGridStrength   * MeshGrid(texcoord, fUIGridBias)
                         );
 
     float2 fadeAll =  float2(   
                                 StrengthCurve(fUIEdgesLumaFading, luma.x),
                                 StrengthCurve(fUIEdgesSaturationFading, GetSaturation(color))
                             );
-    float3 fadeDist = float3(
-                                StrengthCurve(fUIEdgesDistanceFading, currentDepth),
+    float4 fadeDist = float4(
+                                StrengthCurve(fUILumaEdgesDistanceFading, currentDepth),
+                                StrengthCurve(fUIChromaEdgesDistanceFading, currentDepth),
                                 StrengthCurve(fUIOutlinesDistanceFading, currentDepth),
                                 StrengthCurve(fUIGridDistanceFading, currentDepth)
                             );
 
-    edges *= float4(fadeDist.xx, fadeDist.yz) * MIN2(fadeAll);
+    edges *= fadeDist * MIN2(fadeAll);
 
     float edgeLayer = MAX4(edges);
 
-    float3 result = saturate(lerp(color, 0.0.rrr, edgeLayer * fUIStrength));
+    if(iUIStyle == 1)
+        color = currentDepth.rrr;
+
+    float3 result = saturate(lerp(color, fUIColor, edgeLayer * fUIStrength));
 
     if(iUIDebugMaps == 1)
         result = 1.0 - edges.xxx;
@@ -447,13 +472,14 @@ float3 Sketch_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Tar
     else if(iUIDebugMaps == 7)
         result = GetSaturation(color).rrr;
 
-    if(bUIOverlayFadingCurves == 1) {
-        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIOutlinesDistanceFading, texcoord.x), fUIDepthOutlinesCurveColor, fUICurveWidth);
-        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIGridDistanceFading, texcoord.x), fUIGridCurveColor, fUICurveWidth);
-        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesDistanceFading, texcoord.x), fUIEdgesCurveColor, fUICurveWidth);
-        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesLumaFading, texcoord.x), fUILumaCurveColor, fUICurveWidth);
-        result = DrawDebugCurve(result, texcoord, StrengthCurve(fUIEdgesSaturationFading, texcoord.x), fUISaturationCurveColor, fUICurveWidth);
-    }
+    if(bUILumaEdgesOverlay)
+        result = lerp(fUIOverlayColor, 1.0 - edges.xxx, fadeDist.x * fUIOutlinesStrength);
+    else if(bUIChromaEdgesOverlay)
+        result = lerp(fUIOverlayColor, 1.0 - edges.yyy, fadeDist.y * fUIStrength);
+    else if(bUIOutlinesOverlay)
+        result = lerp(fUIOverlayColor, 1.0 - edges.zzz, fadeDist.z * fUIOutlinesStrength);
+    else if(bUIGridOverlay)
+        result = lerp(fUIOverlayColor, 1.0 - edges.www, fadeDist.w * fUIGridStrength);
 
     return result;
 }
