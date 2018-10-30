@@ -35,24 +35,30 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "ReShade.fxh"
-#include "Tools.fxh"
 
-#define UI_CATEGORY_LUMA "Luma"
-#define UI_CATEGORY_CHROMA "Chroma"
-#define UI_CATEGORY_OUTLINES "Outlines"
-#define UI_CATEGORY_GRID "Grid"
-#define UI_CATEGORY_MISC "Misc"
+#define UI_CATEGORY_LUMA "Edges: Luma"
+#define UI_CATEGORY_CHROMA "Edges: Chroma"
+#define UI_CATEGORY_OUTLINES "Edges: Outlines"
+#define UI_CATEGORY_GRID "Edges: Grid"
+#define UI_CATEGORY_MISC "Luma/Saturation Weight"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
 
 #define UI_EDGES_LABEL_TYPE "Type"
 #define UI_EDGES_LABEL_DETAILS "Details"
-#define UI_EDGES_LABEL_STRENGTH "Strength"
+#define UI_EDGES_LABEL_STRENGTH "Power, Slope"
 #define UI_EDGES_LABEL_DISTANCE_STRENGTH "Distance Strength"
-#define UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP "x: Fade Out Near\ny: Fade Out Far\nz: Transistion Strength"
-#define UI_EDGES_LABEL_DEBUG "Debug"
+#define UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP "x: Fade In\ny: Fade Out\nz: Slope"
+#define UI_EDGES_LABEL_DEBUG "Add to Debug Layer"
 //#define UI_EDGES_LABEL_ ""
 
+#define MAX2(v) max(v.x, v.y)
+#define MIN2(v) min(v.x, v.y)
+#define MAX3(v) max(v.x, max(v.y, v.z))
+#define MIN3(v) min(v.x, min(v.y, v.z))
+#define MAX4(v) max(v.x, max(v.y, max(v.z, v.w)))
+#define MIN4(v) min(v.x, min(v.y, min(v.z, v.w)))
+#define SKETCH_LUMACOEFF float3(0.2126, 0.7151, 0.0721)
 /******************************************************************************
     Uniforms
 ******************************************************************************/
@@ -73,13 +79,13 @@ uniform float fUILumaDetails <
     ui_step = 0.01;
 > = 1.0;
 
-uniform float fUILumaStrength <
+uniform float2 fUILumaStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
     ui_label = UI_EDGES_LABEL_STRENGTH;
-    ui_min = 0.0; ui_max = 1.0;
+    ui_min = 0.1; ui_max = 10.0;
     ui_step = 0.01;
-> = 1.0;
+> = float2(1.0, 1.0);
 
 uniform float3 fUILumaEdgesDistanceFading<
     ui_type = "drag";
@@ -90,10 +96,10 @@ uniform float3 fUILumaEdgesDistanceFading<
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
-uniform bool bUILumaEdgesOverlay <
+uniform bool bUILumaEdgesDebugLayer <
     ui_label = UI_EDGES_LABEL_DEBUG;
     ui_category = UI_CATEGORY_LUMA;
-> = false;
+> = true;
 
 ////////////////////////// Chroma //////////////////////////
 uniform int iUIChromaEdgeType <
@@ -112,13 +118,13 @@ uniform float fUIChromaDetails <
     ui_step = 0.01;
 > = 1.0;
 
-uniform float fUIChromaStrength <
+uniform float2 fUIChromaStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
     ui_label = UI_EDGES_LABEL_STRENGTH;
-    ui_min = 0.0; ui_max = 1.0;
+    ui_min = 0.01; ui_max = 10.0;
     ui_step = 0.01;
-> = 1.0;
+> = float2(1.0, 1.0);
 
 uniform float3 fUIChromaEdgesDistanceFading<
     ui_type = "drag";
@@ -129,34 +135,19 @@ uniform float3 fUIChromaEdgesDistanceFading<
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
-uniform bool bUIChromaEdgesOverlay <
+uniform bool bUIChromaEdgesDebugLayer <
     ui_label = UI_EDGES_LABEL_DEBUG;
     ui_category = UI_CATEGORY_CHROMA;
-> = false;
+> = true;
 
 ////////////////////////// Outlines //////////////////////////
-uniform int iUIOutlinesEdgesType <
-    ui_type = "combo";
-    ui_category = UI_CATEGORY_OUTLINES;
-    ui_label = UI_EDGES_LABEL_TYPE;
-    ui_items = "Normal Vector\0Diffs\0";
-> = 0;
-
-uniform float2 fUIOutlinesBias<
-    ui_type = "drag";
-    ui_category = UI_CATEGORY_OUTLINES;
-    ui_label = "Bias";
-    ui_min = 0.0; ui_max = 10.0;
-    ui_step = 0.01;
-> = float2(7.0, 2.9);
-
-uniform float fUIOutlinesStrength <
+uniform float2 fUIOutlinesStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_OUTLINES;
     ui_label = UI_EDGES_LABEL_STRENGTH;
-    ui_min = 0.0; ui_max = 1.0;
+    ui_min = 0.01; ui_max = 10.0;
     ui_step = 0.01;
-> = 1.0;
+> = float2(1.0, 1.0);
 
 uniform float3 fUIOutlinesDistanceFading<
     ui_type = "drag";
@@ -167,27 +158,19 @@ uniform float3 fUIOutlinesDistanceFading<
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
-uniform bool bUIOutlinesOverlay <
+uniform bool bUIOutlinesDebugLayer <
     ui_label = UI_EDGES_LABEL_DEBUG;
     ui_category = UI_CATEGORY_OUTLINES;
-> = false;
+> = true;
 
 ////////////////////////// Grid //////////////////////////
-uniform float2 fUIGridBias<
-    ui_type = "drag";
-    ui_category = UI_CATEGORY_GRID;
-    ui_label = "Bias";
-    ui_min = 0.0; ui_max = 10.0;
-    ui_step = 0.01;
-> = float2(7.0, 2.9);
-
-uniform float fUIGridStrength <
+uniform float2 fUIGridStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_GRID;
     ui_label = UI_EDGES_LABEL_STRENGTH;
-    ui_min = 0.0; ui_max = 1.0;
+    ui_min = 0.01; ui_max = 10.0;
     ui_step = 0.01;
-> = 1.0;
+> = float2(1.0, 1.0);
 
 uniform float3 fUIGridDistanceFading<
     ui_type = "drag";
@@ -196,18 +179,18 @@ uniform float3 fUIGridDistanceFading<
     ui_tooltip = UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP;
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
-> = float3(0.0, 1.0, 0.8);
+> = float3(0.0, 0.1, 0.8);
 
-uniform bool bUIGridOverlay <
+uniform bool bUIGridDebugLayer <
     ui_label = UI_EDGES_LABEL_DEBUG;
     ui_category = UI_CATEGORY_GRID;
-> = false;
+> = true;
 
 ////////////////////////// Misc //////////////////////////
 uniform float3 fUIEdgesLumaFading <
     ui_type = "drag";
     ui_category = UI_CATEGORY_MISC;
-    ui_label = "Weight Pencil-layer with luma";
+    ui_label = "Luma";
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
@@ -215,33 +198,30 @@ uniform float3 fUIEdgesLumaFading <
 uniform float3 fUIEdgesSaturationFading <
     ui_type = "drag";
     ui_category = UI_CATEGORY_MISC;
-    ui_label = "Weight Pencil-layer with saturation";
+    ui_label = "Saturation";
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
-uniform bool bUILumaOverlay <
-    ui_label = "Show Luma Weight";
-    ui_category = UI_CATEGORY_MISC;
-> = false;
-
-uniform bool bUISaturationOverlay <
-    ui_label = "Show Saturation Weight";
-    ui_category = UI_CATEGORY_MISC;
-> = false;
-
 ////////////////////////// Debug //////////////////////////
+
+uniform bool bUIEnableDebugLayer <
+    ui_label = "Enable Debug Layer";
+    ui_category = UI_CATEGORY_DEBUG;
+> = false;
+
+uniform int iUIShowFadingOverlay <
+    ui_type = "combo";
+    ui_category = UI_CATEGORY_DEBUG;
+    ui_label = "Weight Overlay";
+    ui_items = "None\0Luma Edges\0Chroma Edges\0Outlines\0Grid\0Luma\0Saturation\0";
+> = 0;
 
 uniform float3 fUIOverlayColor<
     ui_type = "color";
     ui_category = UI_CATEGORY_DEBUG;
     ui_label = "Overlay Color";
 > = float3(1.0, 0.0, 0.0);
-
-uniform bool bUIShowSketchLayer <
-    ui_label = "Show Sketch Layer";
-    ui_category = UI_CATEGORY_MISC;
-> = false;
 
 ////////////////////////// Effect //////////////////////////
 
@@ -274,19 +254,18 @@ sampler2D SamplerSketchChroma { Texture = texSketchChroma; };
 #define MAX_VALUE(v) max(v.x, max(v.y, v.z))
 
 float DiffEdges(sampler s, int2 vpos) {
-    //static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
-    float valC = dot(tex2Dfetch(s, int4(vpos, 0, 0)).rgb, LumaCoeff);
+    float valC = dot(tex2Dfetch(s, int4(vpos, 0, 0)).rgb, SKETCH_LUMACOEFF);
     float4 val1 = float4(    
-            dot(tex2Dfetch(s, int4(vpos + int2( 0, -1), 0, 0)).rgb, LumaCoeff),//N
-            dot(tex2Dfetch(s, int4(vpos + int2( 1, -1), 0, 0)).rgb, LumaCoeff),//NE
-            dot(tex2Dfetch(s, int4(vpos + int2( 1,  0), 0, 0)).rgb, LumaCoeff),//E
-            dot(tex2Dfetch(s, int4(vpos + int2( 1,  1), 0, 0)).rgb, LumaCoeff)//SE
+            dot(tex2Dfetch(s, int4(vpos + int2( 0, -1), 0, 0)).rgb, SKETCH_LUMACOEFF),//N
+            dot(tex2Dfetch(s, int4(vpos + int2( 1, -1), 0, 0)).rgb, SKETCH_LUMACOEFF),//NE
+            dot(tex2Dfetch(s, int4(vpos + int2( 1,  0), 0, 0)).rgb, SKETCH_LUMACOEFF),//E
+            dot(tex2Dfetch(s, int4(vpos + int2( 1,  1), 0, 0)).rgb, SKETCH_LUMACOEFF)//SE
         );
     float4 val2 = float4(    
-            dot(tex2Dfetch(s, int4(vpos + int2( 0,  1), 0, 0)).rgb, LumaCoeff),//S
-            dot(tex2Dfetch(s, int4(vpos + int2(-1,  1), 0, 0)).rgb, LumaCoeff),//SW
-            dot(tex2Dfetch(s, int4(vpos + int2(-1,  0), 0, 0)).rgb, LumaCoeff),//W
-            dot(tex2Dfetch(s, int4(vpos + int2(-1, -1), 0, 0)).rgb, LumaCoeff)//NW
+            dot(tex2Dfetch(s, int4(vpos + int2( 0,  1), 0, 0)).rgb, SKETCH_LUMACOEFF),//S
+            dot(tex2Dfetch(s, int4(vpos + int2(-1,  1), 0, 0)).rgb, SKETCH_LUMACOEFF),//SW
+            dot(tex2Dfetch(s, int4(vpos + int2(-1,  0), 0, 0)).rgb, SKETCH_LUMACOEFF),//W
+            dot(tex2Dfetch(s, int4(vpos + int2(-1, -1), 0, 0)).rgb, SKETCH_LUMACOEFF)//NW
         );
 
     float4 diffs = abs(val1 - val2);
@@ -308,31 +287,26 @@ float3 Convolution(sampler s, int2 vpos, float kernel1[9], float kernel2[9], flo
     return acc / divisor;
 }
 
-float3 DepthEdges(float2 texcoord, float2 bias) {
+float3 DepthEdges(float2 texcoord) {
     float retVal;
-    if(iUIOutlinesEdgesType == 0) {
-        float3 offset = float3(ReShade::PixelSize.xy, 0.0);
-        float2 posCenter = texcoord.xy;
-        float2 posNorth = posCenter - offset.zy;
-        float2 posEast = posCenter + offset.xz;
+    float3 offset = float3(ReShade::PixelSize.xy, 0.0);
+    float2 posCenter = texcoord.xy;
+    float2 posNorth = posCenter - offset.zy;
+    float2 posEast = posCenter + offset.xz;
 
-        float3 vertCenter = float3(posCenter, ReShade::GetLinearizedDepth(posCenter));
-        float3 vertNorth = float3(posNorth, ReShade::GetLinearizedDepth(posNorth));
-        float3 vertEast = float3(posEast, ReShade::GetLinearizedDepth(posEast));
-        
-        float3 normalVector = normalize(cross(vertCenter - vertNorth, vertCenter - vertEast)) * 0.5 + 0.5;
-
-        retVal = 1.0 - saturate(dot(float3(0.0, 0.0, 1.0), normalVector));
-        retVal = exp(bias.x * retVal - bias.y) - 1.0;
-    }
-    else {
-        retVal = Tools::Functions::GetDepthBufferOutlines(texcoord, 2);
-    }
+    float3 vertCenter = float3(posCenter, ReShade::GetLinearizedDepth(posCenter));
+    float3 vertNorth = float3(posNorth, ReShade::GetLinearizedDepth(posNorth));
+    float3 vertEast = float3(posEast, ReShade::GetLinearizedDepth(posEast));
     
-    return saturate(retVal.rrr);
+    float3 normalVector = normalize(cross(vertCenter - vertNorth, vertCenter - vertEast)) * 0.5 + 0.5;
+
+    retVal = 1.0 - saturate(dot(float3(0.0, 0.0, 1.0), normalVector));
+    //retVal = exp(bias.x * retVal - bias.y) - 1.0;
+    
+    return retVal.rrr;
 }
 
-float MeshGrid(float2 texcoord, float2 bias) {
+float MeshGrid(float2 texcoord) {
     float4 pix = float4(ReShade::PixelSize, -ReShade::PixelSize);
 
     //Get depth of center pixel
@@ -364,7 +338,7 @@ float MeshGrid(float2 texcoord, float2 bias) {
 
     float lineWeight = MAX2(retVal);
 
-    return saturate(exp(bias.x * lineWeight - bias.y));
+    return lineWeight;
 }
 
 float StrengthCurve(float3 fade, float depth) {
@@ -414,23 +388,22 @@ float GetSaturation(float3 color) {
 
 //Convolution gets currently done with samplers, so rendering to a texture is necessary
 void LumaChroma_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord, out float3 luma : SV_Target0, out float3 chroma : SV_Target1) {
-    //static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
     float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
-    luma = dot(color, LumaCoeff);
+    luma = dot(color, SKETCH_LUMACOEFF);
     chroma = color - luma;
 }
 
 float3 Sketch_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
-    //static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
+    //static const float3 SKETCH_LUMACOEFF = float3(0.2126, 0.7151, 0.0721);
     float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
     float luma = tex2Dfetch(SamplerSketchLuma, int4(vpos.xy, 0, 0)).r;
     float currentDepth = ReShade::GetLinearizedDepth(texcoord);
     
     float4 edges = 2.0 * float4(
-                            fUILumaStrength   * GetEdges(SamplerSketchLuma, vpos.xy, iUILumaEdgeType, fUILumaDetails),
-                            fUIChromaStrength * GetEdges(SamplerSketchChroma, vpos.xy, iUIChromaEdgeType, fUIChromaDetails),
-                            fUIOutlinesStrength  * DepthEdges(texcoord, fUIOutlinesBias).r,
-                            fUIGridStrength   * MeshGrid(texcoord, fUIGridBias)
+                            pow(GetEdges(SamplerSketchLuma, vpos.xy, iUILumaEdgeType, fUILumaDetails), fUILumaStrength.x) * fUILumaStrength.y,
+                            pow(GetEdges(SamplerSketchChroma, vpos.xy, iUIChromaEdgeType, fUIChromaDetails), fUIChromaStrength.x) * fUIChromaStrength.y,
+                            pow(DepthEdges(texcoord).r, fUIOutlinesStrength.x) * fUIOutlinesStrength.y,
+                            pow(MeshGrid(texcoord), fUIGridStrength.x) * fUIGridStrength.y
                         );
 
     float2 fadeAll =  float2(   
@@ -450,20 +423,36 @@ float3 Sketch_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Tar
 
     float3 result = saturate(lerp(color, fUIColor, edgeLayer * fUIStrength));
 
-    if(bUILumaEdgesOverlay)
-        result = lerp(fUIOverlayColor, 1.0 - edges.xxx, fadeDist.x * fUIOutlinesStrength);
-    else if(bUIChromaEdgesOverlay)
-        result = lerp(fUIOverlayColor, 1.0 - edges.yyy, fadeDist.y * fUIStrength);
-    else if(bUIOutlinesOverlay)
-        result = lerp(fUIOverlayColor, 1.0 - edges.zzz, fadeDist.z * fUIOutlinesStrength);
-    else if(bUIGridOverlay)
-        result = lerp(fUIOverlayColor, 1.0 - edges.www, fadeDist.w * fUIGridStrength);
-    else if(bUILumaOverlay)
-        result = fadeAll.xxx;
-    else if(bUISaturationOverlay)
-        result = fadeAll.yyy;
-    else if(bUIShowSketchLayer)
-        result = 1.0 - edgeLayer.rrr;
+    float3 edgeDebugLayer = 0.0.rrr;
+    if(bUIEnableDebugLayer) {
+        if(bUILumaEdgesDebugLayer) {
+            edgeDebugLayer = max(edgeDebugLayer, edges.x).rrr;
+        }
+        if(bUIChromaEdgesDebugLayer) {
+            edgeDebugLayer = max(edgeDebugLayer, edges.y).rrr;
+        }
+        if(bUIOutlinesDebugLayer) {
+            edgeDebugLayer = max(edgeDebugLayer, edges.z).rrr;
+        }
+        if(bUIGridDebugLayer) {
+            edgeDebugLayer = max(edgeDebugLayer, edges.w).rrr;
+        }
+        if(iUIShowFadingOverlay != 0) {
+            if(iUIShowFadingOverlay == 1)
+                edgeDebugLayer = lerp(fUIOverlayColor, edgeDebugLayer.rrr, fadeDist.x);
+            else if(iUIShowFadingOverlay == 2)
+                edgeDebugLayer = lerp(fUIOverlayColor, edgeDebugLayer.rrr, fadeDist.y);
+            else if(iUIShowFadingOverlay == 3)
+                edgeDebugLayer = lerp(fUIOverlayColor, edgeDebugLayer.rrr, fadeDist.z);
+            else if(iUIShowFadingOverlay == 4)
+                edgeDebugLayer = lerp(fUIOverlayColor, edgeDebugLayer.rrr, fadeDist.w);
+            else if(iUIShowFadingOverlay == 5)
+                edgeDebugLayer = lerp(fUIOverlayColor, edgeDebugLayer.rrr, fadeAll.x);
+            else if(iUIShowFadingOverlay == 6)
+                edgeDebugLayer = lerp(fUIOverlayColor, edgeDebugLayer.rrr, fadeAll.y);
+        }
+        return edgeDebugLayer;
+    }
 
     return result;
 }
