@@ -44,7 +44,7 @@
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
 
-#define UI_EDGES_LABEL_TYPE "Type"
+#define UI_EDGES_LABEL_ENABLE "Enable"
 #define UI_EDGES_LABEL_DETAILS "Details"
 #define UI_EDGES_LABEL_STRENGTH "Power, Slope"
 #define UI_EDGES_LABEL_DISTANCE_STRENGTH "Distance Strength"
@@ -66,9 +66,9 @@
 uniform int iUILumaEdgeType <
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
-    ui_label = UI_EDGES_LABEL_TYPE;
-    ui_min = 0; ui_max = 2;
-> = 0;
+    ui_label = UI_EDGES_LABEL_ENABLE;
+    ui_min = 0; ui_max = 3;
+> = 1;
 
 uniform float fUILumaDetails <
     ui_type = "drag";
@@ -105,9 +105,9 @@ uniform bool bUILumaEdgesDebugLayer <
 uniform int iUIChromaEdgeType <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
-    ui_label = UI_EDGES_LABEL_TYPE;
-    ui_min = 0; ui_max = 2;
-> = 1;
+    ui_label = UI_EDGES_LABEL_ENABLE;
+    ui_min = 0; ui_max = 3;
+> = 0;
 
 uniform float fUIChromaDetails <
     ui_type = "drag";
@@ -141,6 +141,15 @@ uniform bool bUIChromaEdgesDebugLayer <
 > = true;
 
 ////////////////////////// Outlines //////////////////////////
+uniform int iUIOutlinesEnable <
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_OUTLINES;
+    ui_label = UI_EDGES_LABEL_ENABLE;
+    ui_tooltip = "-1: Disabled\00: Enabled";
+    ui_min = 0; ui_max = 1;
+    ui_step = 1;
+> = 1;
+
 uniform float2 fUIOutlinesStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_OUTLINES;
@@ -164,6 +173,15 @@ uniform bool bUIOutlinesDebugLayer <
 > = true;
 
 ////////////////////////// Grid //////////////////////////
+uniform int iUIGridEnable <
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_GRID;
+    ui_label = UI_EDGES_LABEL_ENABLE;
+    ui_tooltip = "-1: Disabled\00: Enabled";
+    ui_min = 0; ui_max = 1;
+    ui_step = 1;
+> = 1;
+
 uniform float2 fUIGridStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_GRID;
@@ -354,9 +372,9 @@ float3 DrawDebugCurve(float3 background, float2 texcoord, float value, float3 co
 
 float GetEdges(sampler2D s, int2 vpos, int type, float detail) {
     float edges;
-    if(type == 0)
+    if(type == 1)
         edges = DiffEdges(s, vpos.xy);
-    else {
+    else if(type > 1) {
         static const float Sobel_X[9]       = { 1.0,  0.0, -1.0,  2.0, 0.0, -2.0, 1.0,  0.0, -1.0};
         static const float Sobel_Y[9]       = { 1.0,  2.0,  1.0,  0.0, 0.0,  0.0,-1.0, -2.0, -1.0};
         static const float Sobel_X_M[9]     = {-1.0,  0.0,  1.0, -2.0, 0.0,  2.0,-1.0,  0.0,  1.0};
@@ -367,7 +385,7 @@ float GetEdges(sampler2D s, int2 vpos, int type, float detail) {
         static const float Scharr_Y_M[9]    = {-3.0,-10.0, -3.0,  0.0, 0.0,  0.0, 3.0, 10.0,  3.0};
         edges = Convolution(s, vpos.xy, Sobel_X, Scharr_X, detail, 1.0).r;
         edges = max(edges, Convolution(s, vpos.xy, Sobel_Y, Scharr_Y, detail, 1.0).r);
-        if(type == 2) {
+        if(type == 3) {
             edges = max(edges, Convolution(s, vpos.xy, Sobel_X_M, Scharr_X_M, detail, 1.0).r);
             edges = max(edges, Convolution(s, vpos.xy, Sobel_Y_M, Scharr_Y_M, detail, 1.0).r);
         }
@@ -402,8 +420,8 @@ float3 Sketch_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Tar
     float4 edges = 2.0 * float4(
                             pow(GetEdges(SamplerSketchLuma, vpos.xy, iUILumaEdgeType, fUILumaDetails), fUILumaStrength.x) * fUILumaStrength.y,
                             pow(GetEdges(SamplerSketchChroma, vpos.xy, iUIChromaEdgeType, fUIChromaDetails), fUIChromaStrength.x) * fUIChromaStrength.y,
-                            pow(DepthEdges(texcoord).r, fUIOutlinesStrength.x) * fUIOutlinesStrength.y,
-                            pow(MeshGrid(texcoord), fUIGridStrength.x) * fUIGridStrength.y
+                            iUIOutlinesEnable ? pow(DepthEdges(texcoord).r, fUIOutlinesStrength.x) * fUIOutlinesStrength.y : 0.0,
+                            iUIGridEnable ? pow(MeshGrid(texcoord), fUIGridStrength.x) * fUIGridStrength.y : 0.0
                         );
 
     float2 fadeAll =  float2(   
