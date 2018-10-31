@@ -50,7 +50,6 @@
 #define UI_EDGES_LABEL_DISTANCE_STRENGTH "Distance Strength"
 #define UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP "x: Fade In\ny: Fade Out\nz: Slope"
 #define UI_EDGES_LABEL_DEBUG "Add to Debug Layer"
-//#define UI_EDGES_LABEL_ ""
 
 #ifndef MAX2
 #define MAX2(v) max(v.x, v.y)
@@ -281,7 +280,6 @@ namespace Sketch {
     /******************************************************************************
         Textures
     ******************************************************************************/
-
     texture2D texSketchLuma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
     sampler2D SamplerSketchLuma { Texture = texSketchLuma; };
     texture2D texSketchChroma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
