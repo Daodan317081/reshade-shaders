@@ -36,10 +36,10 @@
 
 #include "ReShade.fxh"
 
-#define UI_CATEGORY_LUMA "Edges: Luma"
+#define UI_CATEGORY_LUMA "Edges: Color"
 #define UI_CATEGORY_CHROMA "Edges: Chroma"
 #define UI_CATEGORY_OUTLINES "Edges: Outlines"
-#define UI_CATEGORY_GRID "Edges: Grid"
+#define UI_CATEGORY_GRID "Edges: Mesh Edges"
 #define UI_CATEGORY_MISC "Luma/Saturation Mask"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
@@ -83,7 +83,7 @@ uniform bool bUICheckDepthBuffer <
 > = false;
 
 ////////////////////////// Luma //////////////////////////
-uniform int iUILumaEdgeType <
+uniform int iUIColorEdgesType <
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
     ui_label = UI_EDGES_LABEL_ENABLE;
@@ -91,7 +91,7 @@ uniform int iUILumaEdgeType <
     ui_min = 0; ui_max = 3;
 > = 1;
 
-uniform float fUILumaDetails <
+uniform float fUIColorEdgesDetails <
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
     ui_label = UI_EDGES_LABEL_DETAILS;
@@ -100,7 +100,7 @@ uniform float fUILumaDetails <
     ui_step = 0.01;
 > = 1.0;
 
-uniform float2 fUILumaStrength <
+uniform float2 fUIColorEdgesStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
     ui_label = UI_EDGES_LABEL_STRENGTH;
@@ -108,7 +108,7 @@ uniform float2 fUILumaStrength <
     ui_step = 0.01;
 > = float2(1.0, 1.0);
 
-uniform float3 fUILumaEdgesDistanceFading<
+uniform float3 fUIColorEdgesDistanceFading<
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
     ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
@@ -117,13 +117,13 @@ uniform float3 fUILumaEdgesDistanceFading<
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
-uniform bool bUILumaEdgesDebugLayer <
+uniform bool bUIColorEdgesDebugLayer <
     ui_label = UI_EDGES_LABEL_DEBUG;
     ui_category = UI_CATEGORY_LUMA;
 > = true;
 
 ////////////////////////// Chroma //////////////////////////
-uniform int iUIChromaEdgeType <
+uniform int iUIChromaEdgesType <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
     ui_label = UI_EDGES_LABEL_ENABLE;
@@ -131,7 +131,7 @@ uniform int iUIChromaEdgeType <
     ui_min = 0; ui_max = 3;
 > = 0;
 
-uniform float fUIChromaDetails <
+uniform float fUIChromaEdgesDetails <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
     ui_label = UI_EDGES_LABEL_DETAILS;
@@ -140,7 +140,7 @@ uniform float fUIChromaDetails <
     ui_step = 0.01;
 > = 1.0;
 
-uniform float2 fUIChromaStrength <
+uniform float2 fUIChromaEdgesStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
     ui_label = UI_EDGES_LABEL_STRENGTH;
@@ -194,8 +194,8 @@ uniform bool bUIOutlinesDebugLayer <
     ui_category = UI_CATEGORY_OUTLINES;
 > = true;
 
-////////////////////////// Grid //////////////////////////
-uniform int iUIGridEnable <
+////////////////////////// MeshEdges //////////////////////////
+uniform int iUIMeshEdgesEnable <
     ui_type = "drag";
     ui_category = UI_CATEGORY_GRID;
     ui_label = UI_EDGES_LABEL_ENABLE;
@@ -204,7 +204,7 @@ uniform int iUIGridEnable <
     ui_step = 1;
 > = 1;
 
-uniform float2 fUIGridStrength <
+uniform float2 fUIMeshEdgesStrength <
     ui_type = "drag";
     ui_category = UI_CATEGORY_GRID;
     ui_label = UI_EDGES_LABEL_STRENGTH;
@@ -212,7 +212,7 @@ uniform float2 fUIGridStrength <
     ui_step = 0.01;
 > = float2(1.0, 1.0);
 
-uniform float3 fUIGridDistanceFading<
+uniform float3 fUIMeshEdgesDistanceFading<
     ui_type = "drag";
     ui_category = UI_CATEGORY_GRID;
     ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
@@ -221,7 +221,7 @@ uniform float3 fUIGridDistanceFading<
     ui_step = 0.001;
 > = float3(0.0, 0.1, 0.8);
 
-uniform bool bUIGridDebugLayer <
+uniform bool bUIMeshEdgesDebugLayer <
     ui_label = UI_EDGES_LABEL_DEBUG;
     ui_category = UI_CATEGORY_GRID;
 > = true;
@@ -256,7 +256,7 @@ uniform int iUIShowFadingOverlay <
     ui_type = "combo";
     ui_category = UI_CATEGORY_DEBUG;
     ui_label = "Show Strength Overlay";
-    ui_items = "None\0Distance: Luma Edges\0Distance: Chroma Edges\0Distance: Outlines\0Distance: Grid\0Luma\0Saturation\0";
+    ui_items = "None\0Distance: Color Edges\0Distance: Chroma Edges\0Distance: Outlines\0Distance: Mesh Edges\0Luma\0Saturation\0";
 > = 0;
 
 uniform float3 fUIOverlayColor<
@@ -285,9 +285,9 @@ namespace Comic {
         Textures
     ******************************************************************************/
     texture2D texLuma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
-    sampler2D SamplerLuma { Texture = texLuma; };
+    sampler2D samplerLuma { Texture = texLuma; };
     texture2D texChroma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
-    sampler2D SamplerChroma { Texture = texChroma; };
+    sampler2D samplerChroma { Texture = texChroma; };
 
     /******************************************************************************
         Functions
@@ -453,14 +453,14 @@ namespace Comic {
         }
 
         float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
-        float luma = tex2Dfetch(SamplerLuma, int4(vpos.xy, 0, 0)).r;
+        float luma = tex2Dfetch(samplerLuma, int4(vpos.xy, 0, 0)).r;
         float currentDepth = ReShade::GetLinearizedDepth(texcoord);
         
         float4 edges = float4(
-            pow(GetEdges(Comic::SamplerLuma, vpos.xy, iUILumaEdgeType, fUILumaDetails), fUILumaStrength.x) * fUILumaStrength.y,
-            pow(GetEdges(Comic::SamplerChroma, vpos.xy, iUIChromaEdgeType, fUIChromaDetails), fUIChromaStrength.x) * fUIChromaStrength.y,
+            pow(GetEdges(Comic::samplerLuma, vpos.xy, iUIColorEdgesType, fUIColorEdgesDetails), fUIColorEdgesStrength.x) * fUIColorEdgesStrength.y,
+            pow(GetEdges(Comic::samplerChroma, vpos.xy, iUIChromaEdgesType, fUIChromaEdgesDetails), fUIChromaEdgesStrength.x) * fUIChromaEdgesStrength.y,
             iUIOutlinesEnable ? pow(DepthEdges(texcoord).r, fUIOutlinesStrength.x) * fUIOutlinesStrength.y : 0.0,
-            iUIGridEnable ? pow(MeshGrid(texcoord), fUIGridStrength.x) * fUIGridStrength.y : 0.0
+            iUIMeshEdgesEnable ? pow(MeshGrid(texcoord), fUIMeshEdgesStrength.x) * fUIMeshEdgesStrength.y : 0.0
         );
 
         float2 fadeAll =  float2(   
@@ -468,10 +468,10 @@ namespace Comic {
             StrengthCurve(fUIEdgesSaturationFading, GetSaturation(color))
         );
         float4 fadeDist = float4(
-            StrengthCurve(fUILumaEdgesDistanceFading, currentDepth),
+            StrengthCurve(fUIColorEdgesDistanceFading, currentDepth),
             StrengthCurve(fUIChromaEdgesDistanceFading, currentDepth),
             StrengthCurve(fUIOutlinesDistanceFading, currentDepth),
-            StrengthCurve(fUIGridDistanceFading, currentDepth)
+            StrengthCurve(fUIMeshEdgesDistanceFading, currentDepth)
         );
 
         edges *= fadeDist * MIN2(fadeAll);
@@ -483,7 +483,7 @@ namespace Comic {
         float3 edgeDebugLayer = 0.0.rrr;
         if(bUIEnableDebugLayer)
         {
-            if(bUILumaEdgesDebugLayer)
+            if(bUIColorEdgesDebugLayer)
             {
                 edgeDebugLayer = max(edgeDebugLayer, edges.x).rrr;
             }
@@ -495,7 +495,7 @@ namespace Comic {
             {
                 edgeDebugLayer = max(edgeDebugLayer, edges.z).rrr;
             }
-            if(bUIGridDebugLayer)
+            if(bUIMeshEdgesDebugLayer)
             {
                 edgeDebugLayer = max(edgeDebugLayer, edges.w).rrr;
             }
