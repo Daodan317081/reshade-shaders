@@ -40,7 +40,7 @@
 #define UI_CATEGORY_CHROMA "Edges: Chroma"
 #define UI_CATEGORY_OUTLINES "Edges: Outlines"
 #define UI_CATEGORY_GRID "Edges: Grid"
-#define UI_CATEGORY_MISC "Luma/Saturation Weight"
+#define UI_CATEGORY_MISC "Luma/Saturation Mask"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
 
@@ -48,7 +48,9 @@
 #define UI_EDGES_LABEL_DETAILS "Details"
 #define UI_EDGES_LABEL_STRENGTH "Power, Slope"
 #define UI_EDGES_LABEL_DISTANCE_STRENGTH "Distance Strength"
-#define UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP "x: Fade In\ny: Fade Out\nz: Slope"
+#define UI_EDGES_TOOLTIP_ENABLE "0: Disabled\n1: Value Difference\n2: Single Pass Convolution\n3: Two Pass Convolution"
+#define UI_EDGES_TOOLTIP_DISTANCE_STRENGTH "x: Fade In\ny: Fade Out\nz: Slope"
+#define UI_EDGES_TOOLTIP_DETAILS_TOOLTIP "Only for Convolution"
 #define UI_EDGES_LABEL_DEBUG "Add to Debug Layer"
 
 #ifndef MAX2
@@ -85,6 +87,7 @@ uniform int iUILumaEdgeType <
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
     ui_label = UI_EDGES_LABEL_ENABLE;
+    ui_tooltip = UI_EDGES_TOOLTIP_ENABLE;
     ui_min = 0; ui_max = 3;
 > = 1;
 
@@ -92,7 +95,7 @@ uniform float fUILumaDetails <
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
     ui_label = UI_EDGES_LABEL_DETAILS;
-    ui_tooltip = "Only for Type 1 & 2";
+    ui_tooltip = UI_EDGES_TOOLTIP_DETAILS_TOOLTIP;
     ui_min = 0.0; ui_max = 1.0;
     ui_step = 0.01;
 > = 1.0;
@@ -109,7 +112,7 @@ uniform float3 fUILumaEdgesDistanceFading<
     ui_type = "drag";
     ui_category = UI_CATEGORY_LUMA;
     ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
-    ui_tooltip = UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP;
+    ui_tooltip = UI_EDGES_TOOLTIP_DISTANCE_STRENGTH;
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
@@ -124,6 +127,7 @@ uniform int iUIChromaEdgeType <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
     ui_label = UI_EDGES_LABEL_ENABLE;
+    ui_tooltip = UI_EDGES_TOOLTIP_ENABLE;
     ui_min = 0; ui_max = 3;
 > = 0;
 
@@ -131,7 +135,7 @@ uniform float fUIChromaDetails <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
     ui_label = UI_EDGES_LABEL_DETAILS;
-    ui_tooltip = "Only for Type 1 & 2";
+    ui_tooltip = UI_EDGES_TOOLTIP_DETAILS_TOOLTIP;
     ui_min = 0.0; ui_max = 1.0;
     ui_step = 0.01;
 > = 1.0;
@@ -148,7 +152,7 @@ uniform float3 fUIChromaEdgesDistanceFading<
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
     ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
-    ui_tooltip = UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP;
+    ui_tooltip = UI_EDGES_TOOLTIP_DISTANCE_STRENGTH;
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
@@ -163,7 +167,7 @@ uniform int iUIOutlinesEnable <
     ui_type = "drag";
     ui_category = UI_CATEGORY_OUTLINES;
     ui_label = UI_EDGES_LABEL_ENABLE;
-    ui_tooltip = "-1: Disabled\00: Enabled";
+    ui_tooltip = "0: Disabled\n1: Enabled";
     ui_min = 0; ui_max = 1;
     ui_step = 1;
 > = 1;
@@ -180,7 +184,7 @@ uniform float3 fUIOutlinesDistanceFading<
     ui_type = "drag";
     ui_category = UI_CATEGORY_OUTLINES;
     ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
-    ui_tooltip = UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP;
+    ui_tooltip = UI_EDGES_TOOLTIP_DISTANCE_STRENGTH;
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
@@ -195,7 +199,7 @@ uniform int iUIGridEnable <
     ui_type = "drag";
     ui_category = UI_CATEGORY_GRID;
     ui_label = UI_EDGES_LABEL_ENABLE;
-    ui_tooltip = "-1: Disabled\00: Enabled";
+    ui_tooltip = "0: Disabled\n1: Enabled";
     ui_min = 0; ui_max = 1;
     ui_step = 1;
 > = 1;
@@ -212,7 +216,7 @@ uniform float3 fUIGridDistanceFading<
     ui_type = "drag";
     ui_category = UI_CATEGORY_GRID;
     ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
-    ui_tooltip = UI_EDGES_LABEL_DISTANCE_STRENGTH_TOOLTIP;
+    ui_tooltip = UI_EDGES_TOOLTIP_DISTANCE_STRENGTH;
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 0.1, 0.8);
@@ -227,7 +231,7 @@ uniform float3 fUIEdgesLumaFading <
     ui_type = "drag";
     ui_category = UI_CATEGORY_MISC;
     ui_label = "Luma";
-    ui_tooltip = "Weight the sketch layer with the luma of the current pixel.\nx: Min Value\ny: Max Value\nz: Slope";
+    ui_tooltip = "Mask the sketch layer with\nthe luma of the current pixel.\n\nEnable debug layer and select\nLuma for visualization.\n\nx: Min Value\ny: Max Value\nz: Slope";
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
@@ -236,7 +240,7 @@ uniform float3 fUIEdgesSaturationFading <
     ui_type = "drag";
     ui_category = UI_CATEGORY_MISC;
     ui_label = "Saturation";
-    ui_tooltip = "Weight the sketch layer with the saturation of the current pixel.\nx: Min Value\ny: Max Value\nz: Slope";
+    ui_tooltip = "Mask the sketch layer with\nthe saturation of the current pixel.\n\nEnable debug layer and select\nSaturation for visualization.\n\nx: Min Value\ny: Max Value\nz: Slope";
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
@@ -394,12 +398,6 @@ namespace Sketch {
         return curveMin * curveMax;
     }
 
-    float3 DrawDebugCurve(float3 background, float2 texcoord, float value, float3 color, float curveDiv)
-    {
-        float p = exp(-(BUFFER_HEIGHT/curveDiv) * length(texcoord - float2(texcoord.x, 1.0 - value)));
-        return lerp(background, color, saturate(p));
-    }
-
     float GetEdges(sampler2D s, int2 vpos, int type, float detail)
     {
         float edges;
@@ -453,7 +451,6 @@ namespace Sketch {
             return ReShade::GetLinearizedDepth(texcoord);
         }
 
-        //static const float3 LumaCoeff = float3(0.2126, 0.7151, 0.0721);
         float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
         float luma = tex2Dfetch(SamplerSketchLuma, int4(vpos.xy, 0, 0)).r;
         float currentDepth = ReShade::GetLinearizedDepth(texcoord);
