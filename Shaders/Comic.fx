@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 //
-//ReShade Shader: Sketch
+//ReShade Shader: Comic
 //https://github.com/Daodan317081/reshade-shaders
 //
 //BSD 3-Clause License
@@ -231,7 +231,7 @@ uniform float3 fUIEdgesLumaFading <
     ui_type = "drag";
     ui_category = UI_CATEGORY_MISC;
     ui_label = "Luma";
-    ui_tooltip = "Mask the sketch layer with\nthe luma of the current pixel.\n\nEnable debug layer and select\nLuma for visualization.\n\nx: Min Value\ny: Max Value\nz: Slope";
+    ui_tooltip = "Mask the pencil layer with\nthe luma of the current pixel.\n\nEnable debug layer and select\nLuma for visualization.\n\nx: Min Value\ny: Max Value\nz: Slope";
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
@@ -240,7 +240,7 @@ uniform float3 fUIEdgesSaturationFading <
     ui_type = "drag";
     ui_category = UI_CATEGORY_MISC;
     ui_label = "Saturation";
-    ui_tooltip = "Mask the sketch layer with\nthe saturation of the current pixel.\n\nEnable debug layer and select\nSaturation for visualization.\n\nx: Min Value\ny: Max Value\nz: Slope";
+    ui_tooltip = "Mask the pencil layer with\nthe saturation of the current pixel.\n\nEnable debug layer and select\nSaturation for visualization.\n\nx: Min Value\ny: Max Value\nz: Slope";
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
@@ -280,14 +280,14 @@ uniform float fUIStrength <
     ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
-namespace Sketch {
+namespace Comic {
     /******************************************************************************
         Textures
     ******************************************************************************/
-    texture2D texSketchLuma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
-    sampler2D SamplerSketchLuma { Texture = texSketchLuma; };
-    texture2D texSketchChroma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
-    sampler2D SamplerSketchChroma { Texture = texSketchChroma; };
+    texture2D texLuma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
+    sampler2D SamplerLuma { Texture = texLuma; };
+    texture2D texChroma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
+    sampler2D SamplerChroma { Texture = texChroma; };
 
     /******************************************************************************
         Functions
@@ -351,39 +351,40 @@ namespace Sketch {
 
     float MeshGrid(float2 texcoord)
     {
+        //.x: +x, .y: +y, .z: -x, .w: -y
         float4 pix = float4(ReShade::PixelSize, -ReShade::PixelSize);
 
         //Get depth of center pixel
-        float c = ReShade::GetLinearizedDepth(texcoord);
+        float depthCenter = ReShade::GetLinearizedDepth(texcoord);
         //Get depth of surrounding pixels
-        float4 depthEven = float4(  
-            ReShade::GetLinearizedDepth(texcoord + float2(0.0, pix.w)),
-            ReShade::GetLinearizedDepth(texcoord + float2(0.0, pix.y)),
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.x, 0.0)),
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.z, 0.0))
+        float4 depthCardinal = float4(  
+            ReShade::GetLinearizedDepth(texcoord + float2(0.0, pix.w)),//N
+            ReShade::GetLinearizedDepth(texcoord + float2(0.0, pix.y)),//S
+            ReShade::GetLinearizedDepth(texcoord + float2(pix.x, 0.0)),//E
+            ReShade::GetLinearizedDepth(texcoord + float2(pix.z, 0.0)) //W
         );
 
-        float4 depthOdd  = float4(  
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.x, pix.w)),
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.z, pix.y)),
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.x, pix.y)),
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.z, pix.w))
+        float4 depthInterCardinal  = float4(  
+            ReShade::GetLinearizedDepth(texcoord + float2(pix.x, pix.w)),//NE
+            ReShade::GetLinearizedDepth(texcoord + float2(pix.z, pix.y)),//SW
+            ReShade::GetLinearizedDepth(texcoord + float2(pix.x, pix.y)),//SE
+            ReShade::GetLinearizedDepth(texcoord + float2(pix.z, pix.w)) //NW
         );
         
         //Normalize values
-        float2 mind = float2(MIN4(depthEven), MIN4(depthOdd));
-        float2 maxd = float2(MAX4(depthEven), MAX4(depthOdd));
+        float2 mind = float2(MIN4(depthCardinal), MIN4(depthInterCardinal));
+        float2 maxd = float2(MAX4(depthCardinal), MAX4(depthInterCardinal));
         float span = MAX2(maxd) - MIN2(mind) + 0.00001;
-        c /= span;
-        depthEven /= span;
-        depthOdd /= span;
+        depthCenter /= span;
+        depthCardinal /= span;
+        depthInterCardinal /= span;
         //Calculate the distance of the surrounding pixels to the center
-        float4 diffsEven = abs(depthEven - c);
-        float4 diffsOdd = abs(depthOdd - c);
+        float4 diffsCardinal = abs(depthCardinal - depthCenter);
+        float4 diffsInterCardinal = abs(depthInterCardinal - depthCenter);
         //Calculate the difference of the (opposing) distances
         float2 retVal = float2(
-            max(abs(diffsEven.x - diffsEven.y), abs(diffsEven.z - diffsEven.w)),
-            max(abs(diffsOdd.x - diffsOdd.y), abs(diffsOdd.z - diffsOdd.w))
+            max(abs(diffsCardinal.x - diffsCardinal.y), abs(diffsCardinal.z - diffsCardinal.w)),
+            max(abs(diffsInterCardinal.x - diffsInterCardinal.y), abs(diffsInterCardinal.z - diffsInterCardinal.w))
         );
 
         float lineWeight = MAX2(retVal);
@@ -444,7 +445,7 @@ namespace Sketch {
         chroma = color - luma;
     }
 
-    float3 Sketch_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
+    float3 Comic_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
     {
         if(bUICheckDepthBuffer)
         {
@@ -452,12 +453,12 @@ namespace Sketch {
         }
 
         float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
-        float luma = tex2Dfetch(SamplerSketchLuma, int4(vpos.xy, 0, 0)).r;
+        float luma = tex2Dfetch(SamplerLuma, int4(vpos.xy, 0, 0)).r;
         float currentDepth = ReShade::GetLinearizedDepth(texcoord);
         
         float4 edges = float4(
-            pow(GetEdges(Sketch::SamplerSketchLuma, vpos.xy, iUILumaEdgeType, fUILumaDetails), fUILumaStrength.x) * fUILumaStrength.y,
-            pow(GetEdges(Sketch::SamplerSketchChroma, vpos.xy, iUIChromaEdgeType, fUIChromaDetails), fUIChromaStrength.x) * fUIChromaStrength.y,
+            pow(GetEdges(Comic::SamplerLuma, vpos.xy, iUILumaEdgeType, fUILumaDetails), fUILumaStrength.x) * fUILumaStrength.y,
+            pow(GetEdges(Comic::SamplerChroma, vpos.xy, iUIChromaEdgeType, fUIChromaDetails), fUIChromaStrength.x) * fUIChromaStrength.y,
             iUIOutlinesEnable ? pow(DepthEdges(texcoord).r, fUIOutlinesStrength.x) * fUIOutlinesStrength.y : 0.0,
             iUIGridEnable ? pow(MeshGrid(texcoord), fUIGridStrength.x) * fUIGridStrength.y : 0.0
         );
@@ -520,18 +521,18 @@ namespace Sketch {
     }
 }
 
-technique Sketch
+technique Comic
 {
     pass
     {
         VertexShader = PostProcessVS;
-        PixelShader = Sketch::LumaChroma_PS;
-        RenderTarget0 = Sketch::texSketchLuma;
-        RenderTarget1 = Sketch::texSketchChroma;
+        PixelShader = Comic::LumaChroma_PS;
+        RenderTarget0 = Comic::texLuma;
+        RenderTarget1 = Comic::texChroma;
     }
     pass
     {
         VertexShader = PostProcessVS;
-        PixelShader = Sketch::Sketch_PS;
+        PixelShader = Comic::Comic_PS;
     }
 }
