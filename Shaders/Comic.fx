@@ -404,10 +404,10 @@ namespace Comic {
             if(chroma_type == 3)
             {
                 float4 cX1 = chromaV1 * lerp(Sobel_X_M1, Scharr_X_M1, luma_detail);
-                float4 cX2 = chromaV2 * lerp(Sobel_X_M1, Scharr_X_M2, luma_detail);
+                float4 cX2 = chromaV2 * lerp(Sobel_X_M2, Scharr_X_M2, luma_detail);
                 float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
                 float4 cY1 = chromaV1 * lerp(Sobel_Y_M1, Scharr_Y_M1, luma_detail);
-                float4 cY2 = chromaV2 * lerp(Sobel_Y_M1, Scharr_Y_M2, luma_detail);
+                float4 cY2 = chromaV2 * lerp(Sobel_Y_M2, Scharr_Y_M2, luma_detail);
                 float  cY  = cY1.x + cY1.y + cY1.z + cY1.w + cY2.x + cY2.y + cY2.z + cY2.w;
                 retVal.y = max(retVal.y, max(cX, cY));
             }
