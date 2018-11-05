@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 //
-//ReShade Shader: Comic
+//ReShade Shader: Sketch
 //https://github.com/Daodan317081/reshade-shaders
 //
 //BSD 3-Clause License
@@ -36,11 +36,11 @@
 
 #include "ReShade.fxh"
 
-#define UI_CATEGORY_LUMA "Edges: Color"
+#define UI_CATEGORY_COLOR "Edges: Color"
 #define UI_CATEGORY_CHROMA "Edges: Chroma"
-#define UI_CATEGORY_OUTLINES "Edges: Outlines"
-#define UI_CATEGORY_GRID "Edges: Mesh Edges"
-#define UI_CATEGORY_MISC "Luma/Saturation Mask"
+#define UI_CATEGORY_OUTLINES "Outlines 1"
+#define UI_CATEGORY_MESH_EDGES "Outlines 2 (Mesh Edges)"
+#define UI_CATEGORY_MISC "Luma/Saturation Weight"
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
 
@@ -48,10 +48,13 @@
 #define UI_EDGES_LABEL_DETAILS "Details"
 #define UI_EDGES_LABEL_STRENGTH "Power, Slope"
 #define UI_EDGES_LABEL_DISTANCE_STRENGTH "Distance Strength"
+#define UI_EDGES_LABEL_DEBUG "Add to Debug Layer"
+
 #define UI_EDGES_TOOLTIP_ENABLE "0: Disabled\n1: Value Difference\n2: Single Pass Convolution\n3: Two Pass Convolution"
 #define UI_EDGES_TOOLTIP_DISTANCE_STRENGTH "x: Fade In\ny: Fade Out\nz: Slope"
-#define UI_EDGES_TOOLTIP_DETAILS_TOOLTIP "Only for Convolution"
-#define UI_EDGES_LABEL_DEBUG "Add to Debug Layer"
+#define UI_EDGES_TOOLTIP_WEIGHTS "x: Min\ny: Max\nz: Slope"
+#define UI_EDGES_TOOLTIP_DETAILS "Only for Convolution"
+
 
 #ifndef MAX2
 #define MAX2(v) max(v.x, v.y)
@@ -77,32 +80,27 @@
 /******************************************************************************
     Uniforms
 ******************************************************************************/
-uniform bool bUICheckDepthBuffer <
-    ui_label = "Check Depth Buffer";
-    ui_tooltip = "Near objects should be dark, far objects white.";
-> = false;
-
-////////////////////////// Luma //////////////////////////
+////////////////////////// Color //////////////////////////
 uniform int iUIColorEdgesType <
     ui_type = "drag";
-    ui_category = UI_CATEGORY_LUMA;
-    ui_label = UI_EDGES_LABEL_ENABLE;
     ui_tooltip = UI_EDGES_TOOLTIP_ENABLE;
+    ui_category = UI_CATEGORY_COLOR;
+    ui_label = UI_EDGES_LABEL_ENABLE;
     ui_min = 0; ui_max = 3;
 > = 1;
 
 uniform float fUIColorEdgesDetails <
     ui_type = "drag";
-    ui_category = UI_CATEGORY_LUMA;
+    ui_category = UI_CATEGORY_COLOR;
     ui_label = UI_EDGES_LABEL_DETAILS;
-    ui_tooltip = UI_EDGES_TOOLTIP_DETAILS_TOOLTIP;
+    ui_tooltip = UI_EDGES_TOOLTIP_DETAILS;
     ui_min = 0.0; ui_max = 1.0;
     ui_step = 0.01;
 > = 1.0;
 
 uniform float2 fUIColorEdgesStrength <
     ui_type = "drag";
-    ui_category = UI_CATEGORY_LUMA;
+    ui_category = UI_CATEGORY_COLOR;
     ui_label = UI_EDGES_LABEL_STRENGTH;
     ui_min = 0.1; ui_max = 10.0;
     ui_step = 0.01;
@@ -110,7 +108,7 @@ uniform float2 fUIColorEdgesStrength <
 
 uniform float3 fUIColorEdgesDistanceFading<
     ui_type = "drag";
-    ui_category = UI_CATEGORY_LUMA;
+    ui_category = UI_CATEGORY_COLOR;
     ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
     ui_tooltip = UI_EDGES_TOOLTIP_DISTANCE_STRENGTH;
     ui_min = -1.0; ui_max = 1.0;
@@ -119,26 +117,26 @@ uniform float3 fUIColorEdgesDistanceFading<
 
 uniform bool bUIColorEdgesDebugLayer <
     ui_label = UI_EDGES_LABEL_DEBUG;
-    ui_category = UI_CATEGORY_LUMA;
+    ui_category = UI_CATEGORY_COLOR;
 > = true;
 
 ////////////////////////// Chroma //////////////////////////
 uniform int iUIChromaEdgesType <
     ui_type = "drag";
+    ui_tooltip = UI_EDGES_TOOLTIP_ENABLE;
     ui_category = UI_CATEGORY_CHROMA;
     ui_label = UI_EDGES_LABEL_ENABLE;
-    ui_tooltip = UI_EDGES_TOOLTIP_ENABLE;
     ui_min = 0; ui_max = 3;
-> = 0;
+> = 3;
 
 uniform float fUIChromaEdgesDetails <
     ui_type = "drag";
     ui_category = UI_CATEGORY_CHROMA;
     ui_label = UI_EDGES_LABEL_DETAILS;
-    ui_tooltip = UI_EDGES_TOOLTIP_DETAILS_TOOLTIP;
+    ui_tooltip = UI_EDGES_TOOLTIP_DETAILS;
     ui_min = 0.0; ui_max = 1.0;
     ui_step = 0.01;
-> = 1.0;
+> = 0.0;
 
 uniform float2 fUIChromaEdgesStrength <
     ui_type = "drag";
@@ -146,7 +144,7 @@ uniform float2 fUIChromaEdgesStrength <
     ui_label = UI_EDGES_LABEL_STRENGTH;
     ui_min = 0.01; ui_max = 10.0;
     ui_step = 0.01;
-> = float2(1.0, 1.0);
+> = float2(1.0, 0.5);
 
 uniform float3 fUIChromaEdgesDistanceFading<
     ui_type = "drag";
@@ -155,7 +153,7 @@ uniform float3 fUIChromaEdgesDistanceFading<
     ui_tooltip = UI_EDGES_TOOLTIP_DISTANCE_STRENGTH;
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
-> = float3(0.0, 1.0, 0.8);
+> = float3(0.0, 0.5, 0.8);
 
 uniform bool bUIChromaEdgesDebugLayer <
     ui_label = UI_EDGES_LABEL_DEBUG;
@@ -194,10 +192,10 @@ uniform bool bUIOutlinesDebugLayer <
     ui_category = UI_CATEGORY_OUTLINES;
 > = true;
 
-////////////////////////// MeshEdges //////////////////////////
+////////////////////////// Mesh Edges //////////////////////////
 uniform int iUIMeshEdgesEnable <
     ui_type = "drag";
-    ui_category = UI_CATEGORY_GRID;
+    ui_category = UI_CATEGORY_MESH_EDGES;
     ui_label = UI_EDGES_LABEL_ENABLE;
     ui_tooltip = "0: Disabled\n1: Enabled";
     ui_min = 0; ui_max = 1;
@@ -206,47 +204,46 @@ uniform int iUIMeshEdgesEnable <
 
 uniform float2 fUIMeshEdgesStrength <
     ui_type = "drag";
-    ui_category = UI_CATEGORY_GRID;
+    ui_category = UI_CATEGORY_MESH_EDGES;
     ui_label = UI_EDGES_LABEL_STRENGTH;
     ui_min = 0.01; ui_max = 10.0;
     ui_step = 0.01;
-> = float2(1.0, 1.0);
+> = float2(3.0, 3.0);
 
 uniform float3 fUIMeshEdgesDistanceFading<
     ui_type = "drag";
-    ui_category = UI_CATEGORY_GRID;
+    ui_category = UI_CATEGORY_MESH_EDGES;
     ui_label = UI_EDGES_LABEL_DISTANCE_STRENGTH;
     ui_tooltip = UI_EDGES_TOOLTIP_DISTANCE_STRENGTH;
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
-> = float3(0.0, 0.1, 0.8);
+> = float3(-1.0, 0.1, 0.8);
 
 uniform bool bUIMeshEdgesDebugLayer <
     ui_label = UI_EDGES_LABEL_DEBUG;
-    ui_category = UI_CATEGORY_GRID;
+    ui_category = UI_CATEGORY_MESH_EDGES;
 > = true;
 
 ////////////////////////// Misc //////////////////////////
-uniform float3 fUIEdgesLumaFading <
+uniform float3 fUIEdgesLumaWeight <
     ui_type = "drag";
     ui_category = UI_CATEGORY_MISC;
     ui_label = "Luma";
-    ui_tooltip = "Mask the pencil layer with\nthe luma of the current pixel.\n\nEnable debug layer and select\nLuma for visualization.\n\nx: Min Value\ny: Max Value\nz: Slope";
+    ui_tooltip = UI_EDGES_TOOLTIP_WEIGHTS;
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
-uniform float3 fUIEdgesSaturationFading <
+uniform float3 fUIEdgesSaturationWeight <
     ui_type = "drag";
     ui_category = UI_CATEGORY_MISC;
     ui_label = "Saturation";
-    ui_tooltip = "Mask the pencil layer with\nthe saturation of the current pixel.\n\nEnable debug layer and select\nSaturation for visualization.\n\nx: Min Value\ny: Max Value\nz: Slope";
+    ui_tooltip = UI_EDGES_TOOLTIP_WEIGHTS;
     ui_min = -1.0; ui_max = 1.0;
     ui_step = 0.001;
 > = float3(0.0, 1.0, 0.8);
 
 ////////////////////////// Debug //////////////////////////
-
 uniform bool bUIEnableDebugLayer <
     ui_label = "Enable Debug Layer";
     ui_category = UI_CATEGORY_DEBUG;
@@ -255,8 +252,8 @@ uniform bool bUIEnableDebugLayer <
 uniform int iUIShowFadingOverlay <
     ui_type = "combo";
     ui_category = UI_CATEGORY_DEBUG;
-    ui_label = "Show Strength Overlay";
-    ui_items = "None\0Distance: Color Edges\0Distance: Chroma Edges\0Distance: Outlines\0Distance: Mesh Edges\0Luma\0Saturation\0";
+    ui_label = "Weight Overlay";
+    ui_items = "None\0Luma Edges\0Chroma Edges\0Outlines\0Mesh Edges\0Luma\0Saturation\0";
 > = 0;
 
 uniform float3 fUIOverlayColor<
@@ -280,192 +277,211 @@ uniform float fUIStrength <
     ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
+/******************************************************************************
+    Textures
+******************************************************************************/
 namespace Comic {
-    /******************************************************************************
-        Textures
-    ******************************************************************************/
-    texture2D texLuma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
-    sampler2D samplerLuma { Texture = texLuma; };
-    texture2D texChroma { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
-    sampler2D samplerChroma { Texture = texChroma; };
-
     /******************************************************************************
         Functions
     ******************************************************************************/
-    float DiffEdges(sampler s, int2 vpos) 
-    {
-        float valC = dot(tex2Dfetch(s, int4(vpos, 0, 0)).rgb, LumaCoeff);
-        float4 val1 = float4(    
-            dot(tex2Dfetch(s, int4(vpos + int2( 0, -1), 0, 0)).rgb, LumaCoeff),//N
-            dot(tex2Dfetch(s, int4(vpos + int2( 1, -1), 0, 0)).rgb, LumaCoeff),//NE
-            dot(tex2Dfetch(s, int4(vpos + int2( 1,  0), 0, 0)).rgb, LumaCoeff),//E
-            dot(tex2Dfetch(s, int4(vpos + int2( 1,  1), 0, 0)).rgb, LumaCoeff)//SE
+    float4 EdgeDetection(sampler s, int2 vpos, float2 texcoord, int luma_type, float luma_detail, int chroma_type, float chroma_detail, int outlines_enable, int mesh_edges_enable) {
+        static const float4 Sobel_X1       = float4(  0.0, -1.0, -2.0, -1.0);
+        static const float4 Sobel_X2       = float4(  0.0,  1.0,  2.0,  1.0);
+        static const float4 Sobel_Y1       = float4(  2.0,  1.0,  0.0, -1.0);
+        static const float4 Sobel_Y2       = float4( -2.0, -1.0,  0.0,  1.0);
+        static const float4 Sobel_X_M1     = float4(  0.0,  1.0,  2.0,  1.0);
+        static const float4 Sobel_X_M2     = float4(  0.0, -1.0, -2.0, -1.0);
+        static const float4 Sobel_Y_M1     = float4( -2.0, -1.0,  0.0,  1.0);
+        static const float4 Sobel_Y_M2     = float4(  2.0,  1.0,  0.0, -1.0);
+        static const float4 Scharr_X1      = float4(  0.0, -3.0,-10.0, -3.0);
+        static const float4 Scharr_X2      = float4(  0.0,  3.0, 10.0,  3.0);
+        static const float4 Scharr_Y1      = float4( 10.0,  3.0,  0.0, -3.0);
+        static const float4 Scharr_Y2      = float4(-10.0, -3.0,  0.0,  3.0);
+        static const float4 Scharr_X_M1    = float4(  0.0,  3.0, 10.0,  3.0);
+        static const float4 Scharr_X_M2    = float4(  0.0, -3.0,-10.0, -3.0);
+        static const float4 Scharr_Y_M1    = float4(-10.0, -3.0,  0.0,  3.0);
+        static const float4 Scharr_Y_M2    = float4(-10.0,  3.0,  0.0, -3.0);
+
+        float4 retVal;
+
+        float3 colorC = tex2Dfetch(s, int4(vpos, 0, 0)).rgb;//C
+        float3 color1[4] = {
+            tex2Dfetch(s, int4(vpos + int2( 0, -1), 0, 0)).rgb,//N
+            tex2Dfetch(s, int4(vpos + int2( 1, -1), 0, 0)).rgb,//NE
+            tex2Dfetch(s, int4(vpos + int2( 1,  0), 0, 0)).rgb,//E
+            tex2Dfetch(s, int4(vpos + int2( 1,  1), 0, 0)).rgb,//SE
+        };
+        float3 color2[4] = {    
+            tex2Dfetch(s, int4(vpos + int2( 0,  1), 0, 0)).rgb,//S
+            tex2Dfetch(s, int4(vpos + int2(-1,  1), 0, 0)).rgb,//SW
+            tex2Dfetch(s, int4(vpos + int2(-1,  0), 0, 0)).rgb, //W
+            tex2Dfetch(s, int4(vpos + int2(-1, -1), 0, 0)).rgb //NW
+        };
+
+        float lumaC = dot(colorC, LumaCoeff);
+        float4 luma1 = float4(
+            dot(color1[0], LumaCoeff),
+            dot(color1[1], LumaCoeff),
+            dot(color1[2], LumaCoeff),
+            dot(color1[3], LumaCoeff)
         );
-        float4 val2 = float4(    
-            dot(tex2Dfetch(s, int4(vpos + int2( 0,  1), 0, 0)).rgb, LumaCoeff),//S
-            dot(tex2Dfetch(s, int4(vpos + int2(-1,  1), 0, 0)).rgb, LumaCoeff),//SW
-            dot(tex2Dfetch(s, int4(vpos + int2(-1,  0), 0, 0)).rgb, LumaCoeff),//W
-            dot(tex2Dfetch(s, int4(vpos + int2(-1, -1), 0, 0)).rgb, LumaCoeff)//NW
+        float4 luma2 = float4(
+            dot(color2[0], LumaCoeff),
+            dot(color2[1], LumaCoeff),
+            dot(color2[2], LumaCoeff),
+            dot(color2[3], LumaCoeff)
         );
 
-        float4 diffs = abs(val1 - val2);
-        return saturate((diffs.x + diffs.y + diffs.z + diffs.w) * (1.0 - valC));
-    }
+        float chromaVC = dot(colorC - lumaC.xxx, LumaCoeff);
+        float4 chromaV1 = float4(
+            MAX3((color1[0] - luma1.xxx)),
+            MAX3((color1[1] - luma1.yyy)),
+            MAX3((color1[2] - luma1.zzz)),
+            MAX3((color1[3] - luma1.www))
+        );
+        float4 chromaV2 = float4(
+            MAX3((color2[0] - luma2.xxx)),
+            MAX3((color2[1] - luma2.yyy)),
+            MAX3((color2[2] - luma2.zzz)),
+            MAX3((color2[3] - luma2.www))
+        );
 
-    float3 Convolution(sampler s, int2 vpos, float kernel1[9], float kernel2[9], float weight, float divisor)
-    {
-        float3 acc;
+        float2 pix = ReShade::PixelSize;
+        float depthC = ReShade::GetLinearizedDepth(texcoord);//C
+        float4 depth1 = float4(
+            ReShade::GetLinearizedDepth(texcoord + float2(   0.0, -pix.y)),//N
+            ReShade::GetLinearizedDepth(texcoord + float2( pix.x, -pix.y)),//NE
+            ReShade::GetLinearizedDepth(texcoord + float2( pix.x,    0.0)),//E
+            ReShade::GetLinearizedDepth(texcoord + float2( pix.x,  pix.y))//SE
+        );
+        float4 depth2  = float4(
+            ReShade::GetLinearizedDepth(texcoord + float2(   0.0,  pix.y)),//S
+            ReShade::GetLinearizedDepth(texcoord + float2(-pix.x,  pix.y)),//SW
+            ReShade::GetLinearizedDepth(texcoord + float2(-pix.x,    0.0)), //W
+            ReShade::GetLinearizedDepth(texcoord + float2(-pix.x, -pix.y)) //NW
+        );
 
-        [unroll]
-        for(int m = 0; m < 3; m++)
+        if(luma_type == 1)
         {
-            [unroll]
-            for(int n = 0; n < 3; n++)
+            float4 diffsLuma = abs(luma1 - luma2);
+            retVal.x = (diffsLuma.x + diffsLuma.y + diffsLuma.z + diffsLuma.w) * (1.0 - lumaC);
+        }
+        else if(luma_type > 1)
+        {
+            float4 cX1 = luma1 * lerp(Sobel_X1, Scharr_X1, luma_detail);
+            float4 cX2 = luma2 * lerp(Sobel_X2, Scharr_X2, luma_detail);
+            float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
+            float4 cY1 = luma1 * lerp(Sobel_Y1, Scharr_Y1, luma_detail);
+            float4 cY2 = luma2 * lerp(Sobel_Y2, Scharr_Y2, luma_detail);
+            float  cY  = cY1.x + cY1.y + cY1.z + cY1.w + cY2.x + cY2.y + cY2.z + cY2.w;
+            retVal.x = max(cX, cY);
+            if(luma_type == 3)
             {
-                float k = lerp(kernel1[n + (m*3)], kernel2[n + (m*3)], weight);
-                acc += k * tex2Dfetch(s, int4( (vpos.x - 1 + n), (vpos.y - 1 + m), 0, 0)).rgb;
+                float4 cX1 = luma1 * lerp(Sobel_X_M1, Scharr_X_M1, luma_detail);
+                float4 cX2 = luma2 * lerp(Sobel_X_M2, Scharr_X_M2, luma_detail);
+                float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
+                float4 cY1 = luma1 * lerp(Sobel_Y_M1, Scharr_Y_M1, luma_detail);
+                float4 cY2 = luma2 * lerp(Sobel_Y_M2, Scharr_Y_M2, luma_detail);
+                float  cY  = cY1.x + cY1.y + cY1.z + cY1.w + cY2.x + cY2.y + cY2.z + cY2.w;
+                retVal.x = max(retVal.x, max(cX, cY));
             }
         }
 
-        return acc / divisor;
+        if(chroma_type == 1)
+        {
+            float4 diffsChromaLuma = abs(chromaV1 - chromaV2);
+            retVal.y = (diffsChromaLuma.x + diffsChromaLuma.y + diffsChromaLuma.z + diffsChromaLuma.w) * (1.0 - chromaVC);
+        }
+        else if(chroma_type > 1)
+        {
+            float4 cX1 = chromaV1 * lerp(Sobel_X1, Scharr_X1, chroma_detail);
+            float4 cX2 = chromaV2 * lerp(Sobel_X2, Scharr_X2, chroma_detail);
+            float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
+            float4 cY1 = chromaV1 * lerp(Sobel_Y1, Scharr_Y1, chroma_detail);
+            float4 cY2 = chromaV2 * lerp(Sobel_Y2, Scharr_Y2, chroma_detail);
+            float  cY  = cY1.x + cY1.y + cY1.z + cY1.w + cY2.x + cY2.y + cY2.z + cY2.w;
+            retVal.y = max(cX, cY);
+            if(chroma_type == 3)
+            {
+                float4 cX1 = chromaV1 * lerp(Sobel_X_M1, Scharr_X_M1, luma_detail);
+                float4 cX2 = chromaV2 * lerp(Sobel_X_M1, Scharr_X_M2, luma_detail);
+                float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
+                float4 cY1 = chromaV1 * lerp(Sobel_Y_M1, Scharr_Y_M1, luma_detail);
+                float4 cY2 = chromaV2 * lerp(Sobel_Y_M1, Scharr_Y_M2, luma_detail);
+                float  cY  = cY1.x + cY1.y + cY1.z + cY1.w + cY2.x + cY2.y + cY2.z + cY2.w;
+                retVal.y = max(retVal.y, max(cX, cY));
+            }
+        }
+
+        if(outlines_enable)
+        {
+            float3 vertCenter = float3(texcoord, depthC);
+            float3 vertNorth = float3(texcoord + float2(0.0, -pix.y), depth1.x);
+            float3 vertEast = float3(texcoord + float2(pix.x, 0.0), depth1.z);
+            retVal.z = 1.0 - saturate(dot(float3(0.0, 0.0, 1.0), normalize(cross(vertCenter - vertNorth, vertCenter - vertEast)) * 0.5 + 0.5));
+        }
+
+        if(mesh_edges_enable)
+        {
+            float2 mind = float2(MIN4(depth1), MIN4(depth2));
+            float2 maxd = float2(MAX4(depth1), MAX4(depth2));
+            float span = MAX2(maxd) - MIN2(mind) + 0.00001;
+
+            float depthCenter = depthC;
+            float4 depthCardinal = float4(depth1.x, depth2.x, depth1.z, depth2.z);
+            float4 depthInterCardinal = float4(depth1.y, depth2.y, depth1.w, depth2.w);
+
+            depthCenter /= span;
+            depthCardinal /= span;
+            depthInterCardinal /= span;
+            //Calculate the distance of the surrounding pixels to the center
+            float4 diffsCardinal = abs(depthCardinal - depthCenter);
+            float4 diffsInterCardinal = abs(depthInterCardinal - depthCenter);
+            //Calculate the difference of the (opposing) distances
+            float2 meshEdge = float2(
+                max(abs(diffsCardinal.x - diffsCardinal.y), abs(diffsCardinal.z - diffsCardinal.w)),
+                max(abs(diffsInterCardinal.x - diffsInterCardinal.y), abs(diffsInterCardinal.z - diffsInterCardinal.w))
+            );
+
+            retVal.w = MAX2(meshEdge);
+        }
+
+        return saturate(retVal);
     }
 
-    float3 DepthEdges(float2 texcoord)
-    {
-        float retVal;
-        float3 offset = float3(ReShade::PixelSize.xy, 0.0);
-        float2 posCenter = texcoord.xy;
-        float2 posNorth = posCenter - offset.zy;
-        float2 posEast = posCenter + offset.xz;
-
-        float3 vertCenter = float3(posCenter, ReShade::GetLinearizedDepth(posCenter));
-        float3 vertNorth = float3(posNorth, ReShade::GetLinearizedDepth(posNorth));
-        float3 vertEast = float3(posEast, ReShade::GetLinearizedDepth(posEast));
-        
-        float3 normalVector = normalize(cross(vertCenter - vertNorth, vertCenter - vertEast)) * 0.5 + 0.5;
-
-        retVal = 1.0 - saturate(dot(float3(0.0, 0.0, 1.0), normalVector));
-        
-        return retVal.rrr;
-    }
-
-    float MeshGrid(float2 texcoord)
-    {
-        //.x: +x, .y: +y, .z: -x, .w: -y
-        float4 pix = float4(ReShade::PixelSize, -ReShade::PixelSize);
-
-        //Get depth of center pixel
-        float depthCenter = ReShade::GetLinearizedDepth(texcoord);
-        //Get depth of surrounding pixels
-        float4 depthCardinal = float4(  
-            ReShade::GetLinearizedDepth(texcoord + float2(0.0, pix.w)),//N
-            ReShade::GetLinearizedDepth(texcoord + float2(0.0, pix.y)),//S
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.x, 0.0)),//E
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.z, 0.0)) //W
-        );
-
-        float4 depthInterCardinal  = float4(  
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.x, pix.w)),//NE
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.z, pix.y)),//SW
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.x, pix.y)),//SE
-            ReShade::GetLinearizedDepth(texcoord + float2(pix.z, pix.w)) //NW
-        );
-        
-        //Normalize values
-        float2 mind = float2(MIN4(depthCardinal), MIN4(depthInterCardinal));
-        float2 maxd = float2(MAX4(depthCardinal), MAX4(depthInterCardinal));
-        float span = MAX2(maxd) - MIN2(mind) + 0.00001;
-        depthCenter /= span;
-        depthCardinal /= span;
-        depthInterCardinal /= span;
-        //Calculate the distance of the surrounding pixels to the center
-        float4 diffsCardinal = abs(depthCardinal - depthCenter);
-        float4 diffsInterCardinal = abs(depthInterCardinal - depthCenter);
-        //Calculate the difference of the (opposing) distances
-        float2 retVal = float2(
-            max(abs(diffsCardinal.x - diffsCardinal.y), abs(diffsCardinal.z - diffsCardinal.w)),
-            max(abs(diffsInterCardinal.x - diffsInterCardinal.y), abs(diffsInterCardinal.z - diffsInterCardinal.w))
-        );
-
-        float lineWeight = MAX2(retVal);
-
-        return lineWeight;
-    }
-
-    float StrengthCurve(float3 fade, float depth)
-    {
+    float StrengthCurve(float3 fade, float depth) {
         float curveMin = smoothstep(0.0, 1.0 - fade.z, depth + (0.2 - 1.2 * fade.x));
         float curveMax = smoothstep(0.0, 1.0 - fade.z, 1.0 - depth + (1.2 * fade.y - 1.0));
         return curveMin * curveMax;
     }
 
-    float GetEdges(sampler2D s, int2 vpos, int type, float detail)
-    {
-        float edges;
-        if(type == 1)
-        {
-            edges = DiffEdges(s, vpos.xy);
-        }
-        else if(type > 1) {
-            static const float Sobel_X[9]       = { 1.0,  0.0, -1.0,  2.0, 0.0, -2.0, 1.0,  0.0, -1.0};
-            static const float Sobel_Y[9]       = { 1.0,  2.0,  1.0,  0.0, 0.0,  0.0,-1.0, -2.0, -1.0};
-            static const float Sobel_X_M[9]     = {-1.0,  0.0,  1.0, -2.0, 0.0,  2.0,-1.0,  0.0,  1.0};
-            static const float Sobel_Y_M[9]     = {-1.0, -2.0, -1.0,  0.0, 0.0,  0.0, 1.0,  2.0,  1.0};
-            static const float Scharr_X[9]      = { 3.0,  0.0, -3.0, 10.0, 0.0,-10.0, 3.0,  0.0, -3.0};
-            static const float Scharr_Y[9]      = { 3.0, 10.0,  3.0,  0.0, 0.0,  0.0,-3.0,-10.0, -3.0};
-            static const float Scharr_X_M[9]    = {-3.0,  0.0,  3.0,-10.0, 0.0, 10.0,-3.0,  0.0,  3.0};
-            static const float Scharr_Y_M[9]    = {-3.0,-10.0, -3.0,  0.0, 0.0,  0.0, 3.0, 10.0,  3.0};
-            edges = Convolution(s, vpos.xy, Sobel_X, Scharr_X, detail, 1.0).r;
-            edges = max(edges, Convolution(s, vpos.xy, Sobel_Y, Scharr_Y, detail, 1.0).r);
-            if(type == 3) {
-                edges = max(edges, Convolution(s, vpos.xy, Sobel_X_M, Scharr_X_M, detail, 1.0).r);
-                edges = max(edges, Convolution(s, vpos.xy, Sobel_Y_M, Scharr_Y_M, detail, 1.0).r);
-            }
-        }
-
-        return edges;
-    }
-
-    float GetSaturation(float3 color)
-    {
-        float maxVal = max(color.r, max(color.g, color.b));
-        float minVal = min(color.r, min(color.g, color.b));         
-        return maxVal - minVal;
-    }
-
     /******************************************************************************
         Pixel Shader
     ******************************************************************************/
-
-    //Convolution gets currently done with samplers, so rendering to a texture is necessary
-    void LumaChroma_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord, out float3 luma : SV_Target0, out float3 chroma : SV_Target1)
-    {
+    float3 Sketch_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
         float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
-        luma = dot(color, LumaCoeff);
-        chroma = color - luma;
-    }
-
-    float3 Comic_PS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
-    {
-        if(bUICheckDepthBuffer)
-        {
-            return ReShade::GetLinearizedDepth(texcoord);
-        }
-
-        float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
-        float luma = tex2Dfetch(samplerLuma, int4(vpos.xy, 0, 0)).r;
         float currentDepth = ReShade::GetLinearizedDepth(texcoord);
+        float4 edges = EdgeDetection(ReShade::BackBuffer, 
+                                     vpos.xy,
+                                     texcoord,
+                                     iUIColorEdgesType,
+                                     fUIColorEdgesDetails,
+                                     iUIChromaEdgesType,
+                                     fUIChromaEdgesDetails,
+                                     iUIOutlinesEnable,
+                                     iUIMeshEdgesEnable);
         
-        float4 edges = float4(
-            pow(GetEdges(Comic::samplerLuma, vpos.xy, iUIColorEdgesType, fUIColorEdgesDetails), fUIColorEdgesStrength.x) * fUIColorEdgesStrength.y,
-            pow(GetEdges(Comic::samplerChroma, vpos.xy, iUIChromaEdgesType, fUIChromaEdgesDetails), fUIChromaEdgesStrength.x) * fUIChromaEdgesStrength.y,
-            iUIOutlinesEnable ? pow(DepthEdges(texcoord).r, fUIOutlinesStrength.x) * fUIOutlinesStrength.y : 0.0,
-            iUIMeshEdgesEnable ? pow(MeshGrid(texcoord), fUIMeshEdgesStrength.x) * fUIMeshEdgesStrength.y : 0.0
+        edges = float4(
+            pow(edges.x, fUIColorEdgesStrength.x) * fUIColorEdgesStrength.y,
+            pow(edges.y, fUIChromaEdgesStrength.x) * fUIChromaEdgesStrength.y,
+            pow(edges.z, fUIOutlinesStrength.x) * fUIOutlinesStrength.y,
+            pow(edges.w, fUIMeshEdgesStrength.x) * fUIMeshEdgesStrength.y
         );
+        
 
         float2 fadeAll =  float2(   
-            StrengthCurve(fUIEdgesLumaFading, luma.x),
-            StrengthCurve(fUIEdgesSaturationFading, GetSaturation(color))
+            StrengthCurve(fUIEdgesLumaWeight, dot(color, LumaCoeff)),
+            StrengthCurve(fUIEdgesSaturationWeight, MAX3(color) - MIN3(color))
         );
         float4 fadeDist = float4(
             StrengthCurve(fUIColorEdgesDistanceFading, currentDepth),
@@ -475,32 +491,24 @@ namespace Comic {
         );
 
         edges *= fadeDist * MIN2(fadeAll);
-
-        float edgeLayer = MAX4(edges);
-
-        float3 result = saturate(lerp(color, fUIColor, edgeLayer * fUIStrength));
+        
+        float3 result = saturate(lerp(color, fUIColor, MAX4(edges) * fUIStrength));
 
         float3 edgeDebugLayer = 0.0.rrr;
-        if(bUIEnableDebugLayer)
-        {
-            if(bUIColorEdgesDebugLayer)
-            {
+        if(bUIEnableDebugLayer) {
+            if(bUIColorEdgesDebugLayer) {
                 edgeDebugLayer = max(edgeDebugLayer, edges.x).rrr;
             }
-            if(bUIChromaEdgesDebugLayer)
-            {
+            if(bUIChromaEdgesDebugLayer) {
                 edgeDebugLayer = max(edgeDebugLayer, edges.y).rrr;
             }
-            if(bUIOutlinesDebugLayer)
-            {
+            if(bUIOutlinesDebugLayer) {
                 edgeDebugLayer = max(edgeDebugLayer, edges.z).rrr;
             }
-            if(bUIMeshEdgesDebugLayer)
-            {
+            if(bUIMeshEdgesDebugLayer) {
                 edgeDebugLayer = max(edgeDebugLayer, edges.w).rrr;
             }
-            if(iUIShowFadingOverlay != 0)
-            {
+            if(iUIShowFadingOverlay != 0) {
                 if(iUIShowFadingOverlay == 1)
                     edgeDebugLayer = lerp(fUIOverlayColor, edgeDebugLayer.rrr, fadeDist.x);
                 else if(iUIShowFadingOverlay == 2)
@@ -516,23 +524,14 @@ namespace Comic {
             }
             return edgeDebugLayer;
         }
-
         return result;
     }
 }
 
 technique Comic
 {
-    pass
-    {
+    pass {
         VertexShader = PostProcessVS;
-        PixelShader = Comic::LumaChroma_PS;
-        RenderTarget0 = Comic::texLuma;
-        RenderTarget1 = Comic::texChroma;
-    }
-    pass
-    {
-        VertexShader = PostProcessVS;
-        PixelShader = Comic::Comic_PS;
+        PixelShader = Comic::Sketch_PS;
     }
 }
