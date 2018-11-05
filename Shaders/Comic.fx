@@ -304,6 +304,12 @@ namespace Comic {
 
         float4 retVal;
 
+        /******************************************************************************
+            1. Gather the color of the current pixel and its eight neighbours.
+            2. Calculate the luma of all nine pixels
+            3. Calculate the chroma of all nine pixels and save that colors value
+            4. Get all nine depth values
+        ******************************************************************************/
         float3 colorC = tex2Dfetch(s, int4(vpos, 0, 0)).rgb;//C
         float3 color1[4] = {
             tex2Dfetch(s, int4(vpos + int2( 0, -1), 0, 0)).rgb,//N
@@ -314,7 +320,7 @@ namespace Comic {
         float3 color2[4] = {    
             tex2Dfetch(s, int4(vpos + int2( 0,  1), 0, 0)).rgb,//S
             tex2Dfetch(s, int4(vpos + int2(-1,  1), 0, 0)).rgb,//SW
-            tex2Dfetch(s, int4(vpos + int2(-1,  0), 0, 0)).rgb, //W
+            tex2Dfetch(s, int4(vpos + int2(-1,  0), 0, 0)).rgb,//W
             tex2Dfetch(s, int4(vpos + int2(-1, -1), 0, 0)).rgb //NW
         };
 
@@ -363,11 +369,25 @@ namespace Comic {
 
         if(luma_type == 1)
         {
+            /******************************************************************************
+                Edge detection type 1:
+                1. Calculate the difference of the pixels that oppose each other
+                   (e.g. Difference of the pixel north and south of the center)
+                2. Add all diffs together and weight the result with the center pixel
+            ******************************************************************************/
             float4 diffsLuma = abs(luma1 - luma2);
             retVal.x = (diffsLuma.x + diffsLuma.y + diffsLuma.z + diffsLuma.w) * (1.0 - lumaC);
         }
         else if(luma_type > 1)
         {
+            /******************************************************************************
+                Edge detection type 2: Edge detection by convolution
+                This is basically just convolution: Multiply all the pixels with
+                the corresponding value from the kernel and add all of them together.
+                In order to be able to have control over the detail (detect less/more edges)
+                the kernel used is a linear interpolation between the Sobel- and Scharr-Operator.
+                Gives the image some sort of embossed look.
+            ******************************************************************************/
             float4 cX1 = luma1 * lerp(Sobel_X1, Scharr_X1, luma_detail);
             float4 cX2 = luma2 * lerp(Sobel_X2, Scharr_X2, luma_detail);
             float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
@@ -377,6 +397,11 @@ namespace Comic {
             retVal.x = max(cX, cY);
             if(luma_type == 3)
             {
+                /******************************************************************************
+                    Edge detection type 3:
+                    Same as above but the kernels are flipped.
+                    Adds more edges.
+                ******************************************************************************/
                 float4 cX1 = luma1 * lerp(Sobel_X_M1, Scharr_X_M1, luma_detail);
                 float4 cX2 = luma2 * lerp(Sobel_X_M2, Scharr_X_M2, luma_detail);
                 float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
@@ -387,6 +412,7 @@ namespace Comic {
             }
         }
 
+        //Same as above but with the value of the croma as source
         if(chroma_type == 1)
         {
             float4 diffsChromaLuma = abs(chromaV1 - chromaV2);
@@ -415,6 +441,11 @@ namespace Comic {
 
         if(outlines_enable)
         {
+            /******************************************************************************
+                Outlines type 1:
+                1. Calculate the normal vector of the current pixel
+                2. Calculate how much the normal vector differs from the view direction.
+            ******************************************************************************/
             float3 vertCenter = float3(texcoord, depthC);
             float3 vertNorth = float3(texcoord + float2(0.0, -pix.y), depth1.x);
             float3 vertEast = float3(texcoord + float2(pix.x, 0.0), depth1.z);
@@ -423,18 +454,24 @@ namespace Comic {
 
         if(mesh_edges_enable)
         {
+            /******************************************************************************
+                Outlines type 2:
+                This method calculates how flat the plane around the center pixel is.
+                Can be used to draw the polygon edges of a mesh and its outline.
+            ******************************************************************************/
+            float depthCenter = depthC;
+            float4 depthCardinal = float4(depth1.x, depth2.x, depth1.z, depth2.z);
+            float4 depthInterCardinal = float4(depth1.y, depth2.y, depth1.w, depth2.w);
+            //Calculate the min and max depths
             float2 mind = float2(MIN4(depth1), MIN4(depth2));
             float2 maxd = float2(MAX4(depth1), MAX4(depth2));
             float span = MAX2(maxd) - MIN2(mind) + 0.00001;
 
-            float depthCenter = depthC;
-            float4 depthCardinal = float4(depth1.x, depth2.x, depth1.z, depth2.z);
-            float4 depthInterCardinal = float4(depth1.y, depth2.y, depth1.w, depth2.w);
-
+            //Normalize values
             depthCenter /= span;
             depthCardinal /= span;
             depthInterCardinal /= span;
-            //Calculate the distance of the surrounding pixels to the center
+            //Calculate the (depth-wise) distance of the surrounding pixels to the center
             float4 diffsCardinal = abs(depthCardinal - depthCenter);
             float4 diffsInterCardinal = abs(depthInterCardinal - depthCenter);
             //Calculate the difference of the (opposing) distances
@@ -477,12 +514,12 @@ namespace Comic {
             pow(edges.z, fUIOutlinesStrength.x) * fUIOutlinesStrength.y,
             pow(edges.w, fUIMeshEdgesStrength.x) * fUIMeshEdgesStrength.y
         );
-        
 
         float2 fadeAll =  float2(   
             StrengthCurve(fUIEdgesLumaWeight, dot(color, LumaCoeff)),
             StrengthCurve(fUIEdgesSaturationWeight, MAX3(color) - MIN3(color))
         );
+
         float4 fadeDist = float4(
             StrengthCurve(fUIColorEdgesDistanceFading, currentDepth),
             StrengthCurve(fUIChromaEdgesDistanceFading, currentDepth),
@@ -494,6 +531,9 @@ namespace Comic {
         
         float3 result = saturate(lerp(color, fUIColor, MAX4(edges) * fUIStrength));
 
+        /******************************************************************************
+            Debug Output
+        ******************************************************************************/
         float3 edgeDebugLayer = 0.0.rrr;
         if(bUIEnableDebugLayer) {
             if(bUIColorEdgesDebugLayer) {
