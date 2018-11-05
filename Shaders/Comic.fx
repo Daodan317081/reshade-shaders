@@ -33,6 +33,14 @@
 //OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///////////////////////////////////////////////////////////////////////////////
+//
+// Version History:
+// 05-nov-2018:     v1.1.0    Optimization, new default values,
+//                            fixed wrong variable used in interpolation,
+//                            added comments.
+// 01-nov-2018:     v1.0.0    Feature complete beta.
+//
+///////////////////////////////////////////////////////////////////////////////
 
 #include "ReShade.fxh"
 
