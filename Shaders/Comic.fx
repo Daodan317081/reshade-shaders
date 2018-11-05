@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 //
-//ReShade Shader: Sketch
+//ReShade Shader: Comic
 //https://github.com/Daodan317081/reshade-shaders
 //
 //BSD 3-Clause License
