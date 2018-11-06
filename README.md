@@ -1,5 +1,5 @@
 # reshade-shaders
-Shaders for ReShade
+Shaders for [ReShade](https://reshade.me/) written in the [ReShade FX](https://github.com/crosire/reshade-shaders/blob/master/REFERENCE.md) shader language.
 
 ## [Comic.fx](https://github.com/Daodan317081/reshade-shaders/blob/master/Shaders/Comic.fx)
 
