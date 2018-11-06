@@ -350,6 +350,21 @@ namespace Tools {
 
             return Convolution::ConvReturn(retValX, retValY, type);
         }
+
+        float3 SimpleBlur(sampler s, int2 vpos, int size) {
+            float3 acc;
+
+            size = clamp(size, 3, 14);
+            [unroll]
+            for(int m = 0; m < size; m++) {
+                [unroll]
+                for(int n = 0; n < size; n++) {
+                    acc += tex2Dfetch(s, int4( (vpos.x - size / 3 + n), (vpos.y - size / 3 + m), 0, 0)).rgb;
+                }
+            }
+
+            return acc / (size * size);
+        }
     }
 
     namespace Draw {
@@ -380,7 +395,7 @@ namespace Tools {
             float2 coord_pix = float2(BUFFER_WIDTH, BUFFER_HEIGHT) * texcoord;
             float2 overlay_size = (float2)tex2Dsize(overlay, 0) * scale;
             float2 border_min = (float2)offset;
-            float2 border_max = border_min + overlay_size;
+            float2 border_max = border_min + overlay_size + 1;
 
             if( coord_pix.x <= border_max.x &&
                 coord_pix.y <= border_max.y &&
