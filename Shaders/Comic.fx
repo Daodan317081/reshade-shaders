@@ -35,6 +35,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Version History:
+// 07-nov-2918:     v1.1.1    Place convolution code in its own function,
+//                            code cleanup
 // 05-nov-2018:     v1.1.0    Optimization, new default values,
 //                            fixed wrong variable used in interpolation,
 //                            added comments.
@@ -289,10 +291,10 @@ uniform float fUIStrength <
     Textures
 ******************************************************************************/
 namespace Comic {
-    /******************************************************************************
+     /******************************************************************************
         Functions
     ******************************************************************************/
-    float4 EdgeDetection(sampler s, int2 vpos, float2 texcoord, int luma_type, float luma_detail, int chroma_type, float chroma_detail, int outlines_enable, int mesh_edges_enable) {
+    float Convolution(float4 values1, float4 values2, int type, float detail) {
         static const float4 Sobel_X1       = float4(  0.0, -1.0, -2.0, -1.0);
         static const float4 Sobel_X2       = float4(  0.0,  1.0,  2.0,  1.0);
         static const float4 Sobel_Y1       = float4(  2.0,  1.0,  0.0, -1.0);
@@ -310,6 +312,45 @@ namespace Comic {
         static const float4 Scharr_Y_M1    = float4(-10.0, -3.0,  0.0,  3.0);
         static const float4 Scharr_Y_M2    = float4(-10.0,  3.0,  0.0, -3.0);
 
+        float retVal;
+
+        /******************************************************************************
+            Edge detection type 2: Edge detection by convolution
+            This is basically just convolution: Multiply all the pixels with
+            the corresponding value from the kernel and add all of them together.
+            In order to be able to have control over the detail (detect less/more edges)
+            the kernel used is a linear interpolation between the Sobel- and Scharr-Operator.
+            Gives the image some sort of embossed look.
+        ******************************************************************************/
+        float4 cX1 = values1 * lerp(Sobel_X1, Scharr_X1, detail);
+        float4 cX2 = values2 * lerp(Sobel_X2, Scharr_X2, detail);
+        float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
+        float4 cY1 = values1 * lerp(Sobel_Y1, Scharr_Y1, detail);
+        float4 cY2 = values2 * lerp(Sobel_Y2, Scharr_Y2, detail);
+        float  cY  = cY1.x + cY1.y + cY1.z + cY1.w + cY2.x + cY2.y + cY2.z + cY2.w;
+        retVal = max(cX, cY);
+        if(type == 3)
+        {
+            /******************************************************************************
+                Edge detection type 3:
+                Same as above but the kernels are flipped.
+                Adds more edges.
+            ******************************************************************************/
+            float4 cX1 = values1 * lerp(Sobel_X_M1, Scharr_X_M1, detail);
+            float4 cX2 = values2 * lerp(Sobel_X_M2, Scharr_X_M2, detail);
+            float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
+            float4 cY1 = values1 * lerp(Sobel_Y_M1, Scharr_Y_M1, detail);
+            float4 cY2 = values2 * lerp(Sobel_Y_M2, Scharr_Y_M2, detail);
+            float  cY  = cY1.x + cY1.y + cY1.z + cY1.w + cY2.x + cY2.y + cY2.z + cY2.w;
+            retVal = max(retVal, max(cX, cY));
+        }
+        return retVal;
+    }
+
+    float4 EdgeDetection(sampler s, int2 vpos, float2 texcoord,
+                         int luma_type, float luma_detail,
+                         int chroma_type, float chroma_detail,
+                         int outlines_enable, int mesh_edges_enable) {
         float4 retVal;
 
         /******************************************************************************
@@ -377,47 +418,18 @@ namespace Comic {
 
         if(luma_type == 1)
         {
-            /******************************************************************************
-                Edge detection type 1:
-                1. Calculate the difference of the pixels that oppose each other
-                   (e.g. Difference of the pixel north and south of the center)
-                2. Add all diffs together and weight the result with the center pixel
-            ******************************************************************************/
+            //******************************************************************************
+            //    Edge detection type 1:
+            //    1. Calculate the difference of the pixels that oppose each other
+            //       (e.g. Difference of the pixel north and south of the center)
+            //    2. Add all diffs together and weight the result with the center pixel
+            //******************************************************************************
             float4 diffsLuma = abs(luma1 - luma2);
             retVal.x = (diffsLuma.x + diffsLuma.y + diffsLuma.z + diffsLuma.w) * (1.0 - lumaC);
         }
         else if(luma_type > 1)
         {
-            /******************************************************************************
-                Edge detection type 2: Edge detection by convolution
-                This is basically just convolution: Multiply all the pixels with
-                the corresponding value from the kernel and add all of them together.
-                In order to be able to have control over the detail (detect less/more edges)
-                the kernel used is a linear interpolation between the Sobel- and Scharr-Operator.
-                Gives the image some sort of embossed look.
-            ******************************************************************************/
-            float4 cX1 = luma1 * lerp(Sobel_X1, Scharr_X1, luma_detail);
-            float4 cX2 = luma2 * lerp(Sobel_X2, Scharr_X2, luma_detail);
-            float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
-            float4 cY1 = luma1 * lerp(Sobel_Y1, Scharr_Y1, luma_detail);
-            float4 cY2 = luma2 * lerp(Sobel_Y2, Scharr_Y2, luma_detail);
-            float  cY  = cY1.x + cY1.y + cY1.z + cY1.w + cY2.x + cY2.y + cY2.z + cY2.w;
-            retVal.x = max(cX, cY);
-            if(luma_type == 3)
-            {
-                /******************************************************************************
-                    Edge detection type 3:
-                    Same as above but the kernels are flipped.
-                    Adds more edges.
-                ******************************************************************************/
-                float4 cX1 = luma1 * lerp(Sobel_X_M1, Scharr_X_M1, luma_detail);
-                float4 cX2 = luma2 * lerp(Sobel_X_M2, Scharr_X_M2, luma_detail);
-                float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
-                float4 cY1 = luma1 * lerp(Sobel_Y_M1, Scharr_Y_M1, luma_detail);
-                float4 cY2 = luma2 * lerp(Sobel_Y_M2, Scharr_Y_M2, luma_detail);
-                float  cY  = cY1.x + cY1.y + cY1.z + cY1.w + cY2.x + cY2.y + cY2.z + cY2.w;
-                retVal.x = max(retVal.x, max(cX, cY));
-            }
+            retVal.x = Comic::Convolution(luma1, luma2, luma_type, luma_detail);
         }
 
         //Same as above but with the value of the croma as source
@@ -428,23 +440,7 @@ namespace Comic {
         }
         else if(chroma_type > 1)
         {
-            float4 cX1 = chromaV1 * lerp(Sobel_X1, Scharr_X1, chroma_detail);
-            float4 cX2 = chromaV2 * lerp(Sobel_X2, Scharr_X2, chroma_detail);
-            float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
-            float4 cY1 = chromaV1 * lerp(Sobel_Y1, Scharr_Y1, chroma_detail);
-            float4 cY2 = chromaV2 * lerp(Sobel_Y2, Scharr_Y2, chroma_detail);
-            float  cY  = cY1.x + cY1.y + cY1.z + cY1.w + cY2.x + cY2.y + cY2.z + cY2.w;
-            retVal.y = max(cX, cY);
-            if(chroma_type == 3)
-            {
-                float4 cX1 = chromaV1 * lerp(Sobel_X_M1, Scharr_X_M1, luma_detail);
-                float4 cX2 = chromaV2 * lerp(Sobel_X_M2, Scharr_X_M2, luma_detail);
-                float  cX  = cX1.x + cX1.y + cX1.z + cX1.w + cX2.x + cX2.y + cX2.z + cX2.w;
-                float4 cY1 = chromaV1 * lerp(Sobel_Y_M1, Scharr_Y_M1, luma_detail);
-                float4 cY2 = chromaV2 * lerp(Sobel_Y_M2, Scharr_Y_M2, luma_detail);
-                float  cY  = cY1.x + cY1.y + cY1.z + cY1.w + cY2.x + cY2.y + cY2.z + cY2.w;
-                retVal.y = max(retVal.y, max(cX, cY));
-            }
+            retVal.y = Comic::Convolution(chromaV1, chromaV2, chroma_type, chroma_detail);
         }
 
         if(outlines_enable)
@@ -471,8 +467,8 @@ namespace Comic {
             float4 depthCardinal = float4(depth1.x, depth2.x, depth1.z, depth2.z);
             float4 depthInterCardinal = float4(depth1.y, depth2.y, depth1.w, depth2.w);
             //Calculate the min and max depths
-            float2 mind = float2(MIN4(depth1), MIN4(depth2));
-            float2 maxd = float2(MAX4(depth1), MAX4(depth2));
+            float2 mind = float2(MIN4(depthCardinal), MIN4(depthInterCardinal));
+            float2 maxd = float2(MAX4(depthCardinal), MAX4(depthInterCardinal));
             float span = MAX2(maxd) - MIN2(mind) + 0.00001;
 
             //Normalize values
