@@ -35,7 +35,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Version History:
-// 07-nov-2918:     v1.1.1    Place convolution code in its own function,
+// 09-nov-2018:     v1.1.2    Simplify code for debug-output
+// 07-nov-2018:     v1.1.1    Place convolution code in its own function,
 //                            code cleanup
 // 05-nov-2018:     v1.1.0    Optimization, new default values,
 //                            fixed wrong variable used in interpolation,
@@ -273,7 +274,6 @@ uniform float3 fUIOverlayColor<
 > = float3(1.0, 0.0, 0.0);
 
 ////////////////////////// Effect //////////////////////////
-
 uniform float3 fUIColor <
     ui_type = "color";
     ui_category = UI_CATEGORY_EFFECT;
@@ -540,18 +540,9 @@ namespace Comic {
         ******************************************************************************/
         float3 edgeDebugLayer = 0.0.rrr;
         if(bUIEnableDebugLayer) {
-            if(bUIColorEdgesDebugLayer) {
-                edgeDebugLayer = max(edgeDebugLayer, edges.x).rrr;
-            }
-            if(bUIChromaEdgesDebugLayer) {
-                edgeDebugLayer = max(edgeDebugLayer, edges.y).rrr;
-            }
-            if(bUIOutlinesDebugLayer) {
-                edgeDebugLayer = max(edgeDebugLayer, edges.z).rrr;
-            }
-            if(bUIMeshEdgesDebugLayer) {
-                edgeDebugLayer = max(edgeDebugLayer, edges.w).rrr;
-            }
+            int4 enabled = int4(bUIColorEdgesDebugLayer,bUIChromaEdgesDebugLayer,bUIOutlinesDebugLayer,bUIMeshEdgesDebugLayer);
+            edgeDebugLayer = MAX4((edges * enabled));
+
             if(iUIShowFadingOverlay != 0) {
                 if(iUIShowFadingOverlay == 1)
                     edgeDebugLayer = lerp(fUIOverlayColor, edgeDebugLayer.rrr, fadeDist.x);
