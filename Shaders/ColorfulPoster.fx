@@ -56,7 +56,7 @@ uniform int iUIStepType <
     ui_type = "combo";
     ui_category = UI_CATEGORY_POSTERIZATION;
     ui_label = "Curve Type";
-    ui_items = "Linear\0Smoothstep\0Logistic\0";
+    ui_items = "Linear\0Smoothstep\0Logistic\0Sigmoid\0";
 > = 2;
 
 uniform float fUIStepContinuity <
@@ -116,6 +116,8 @@ float Posterize(float x, int numLevels, float continuity, float slope, int type)
         step2 = smoothstep(0.0, 1.0, frc) * stepheight;
     else if(type == 2)
         step2 = (1.0 / (1.0 + exp(-slope*(frc - 0.5)))) * stepheight;
+    else if(type == 3)
+        step2 = (frc < 0.5 ? pow(frc, slope) * pow(2.0, slope) * 0.5 : 1.0 - pow(1.0 - frc, slope) * pow(2.0, slope) * 0.5) * stepheight;
     else
         step2 = frc * stepheight;
 
