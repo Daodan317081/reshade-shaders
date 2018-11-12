@@ -7,7 +7,7 @@ Shaders for [ReShade](https://reshade.me/) written in the [ReShade FX](https://g
 
 In order to achieve this look this shader uses different sorts of (configurable) edge detection methods on the color and depth information of the frame. Also, every edge layer can be individually faded in and out with distance. After all the layers are combined the resulting layer can be masked based on the luminosity and saturation of the original color (can be useful to mask the game's UI).
 
-The whole appeal of this shader relys on the depth buffer - so access to it is desperatly needed.
+The whole appeal of this shader relies on the depth buffer - so access to it is desperatly needed.
 
 ## [ColorIsolation.fx](https://github.com/Daodan317081/reshade-shaders/blob/master/Shaders/ColorIsolation.fx)
 
