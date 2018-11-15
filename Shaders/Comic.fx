@@ -221,6 +221,14 @@ uniform float2 fUIMeshEdgesStrength <
     ui_step = 0.01;
 > = float2(3.0, 3.0);
 
+uniform int iUIMeshEdgesIterations <
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_MESH_EDGES;
+    ui_label = "Line Width";
+    ui_min = 1; ui_max = 3;
+    ui_step = 0.01;
+> = 1;
+
 uniform float3 fUIMeshEdgesDistanceFading<
     ui_type = "drag";
     ui_category = UI_CATEGORY_MESH_EDGES;
@@ -347,6 +355,36 @@ namespace Comic {
         return retVal;
     }
 
+    float MeshEdges(float depthC, float4 depth1, float4 depth2) {
+            /******************************************************************************
+                Outlines type 2:
+                This method calculates how flat the plane around the center pixel is.
+                Can be used to draw the polygon edges of a mesh and its outline.
+            ******************************************************************************/
+            float depthCenter = depthC;
+            float4 depthCardinal = float4(depth1.x, depth2.x, depth1.z, depth2.z);
+            float4 depthInterCardinal = float4(depth1.y, depth2.y, depth1.w, depth2.w);
+            //Calculate the min and max depths
+            float2 mind = float2(MIN4(depthCardinal), MIN4(depthInterCardinal));
+            float2 maxd = float2(MAX4(depthCardinal), MAX4(depthInterCardinal));
+            float span = MAX2(maxd) - MIN2(mind) + 0.00001;
+
+            //Normalize values
+            depthCenter /= span;
+            depthCardinal /= span;
+            depthInterCardinal /= span;
+            //Calculate the (depth-wise) distance of the surrounding pixels to the center
+            float4 diffsCardinal = abs(depthCardinal - depthCenter);
+            float4 diffsInterCardinal = abs(depthInterCardinal - depthCenter);
+            //Calculate the difference of the (opposing) distances
+            float2 meshEdge = float2(
+                max(abs(diffsCardinal.x - diffsCardinal.y), abs(diffsCardinal.z - diffsCardinal.w)),
+                max(abs(diffsInterCardinal.x - diffsInterCardinal.y), abs(diffsInterCardinal.z - diffsInterCardinal.w))
+            );
+
+            return MAX2(meshEdge);
+    }
+
     float4 EdgeDetection(sampler s, int2 vpos, float2 texcoord,
                          int luma_type, float luma_detail,
                          int chroma_type, float chroma_detail,
@@ -403,18 +441,24 @@ namespace Comic {
 
         float2 pix = ReShade::PixelSize;
         float depthC = ReShade::GetLinearizedDepth(texcoord);//C
-        float4 depth1 = float4(
-            ReShade::GetLinearizedDepth(texcoord + float2(   0.0, -pix.y)),//N
-            ReShade::GetLinearizedDepth(texcoord + float2( pix.x, -pix.y)),//NE
-            ReShade::GetLinearizedDepth(texcoord + float2( pix.x,    0.0)),//E
-            ReShade::GetLinearizedDepth(texcoord + float2( pix.x,  pix.y))//SE
-        );
-        float4 depth2  = float4(
-            ReShade::GetLinearizedDepth(texcoord + float2(   0.0,  pix.y)),//S
-            ReShade::GetLinearizedDepth(texcoord + float2(-pix.x,  pix.y)),//SW
-            ReShade::GetLinearizedDepth(texcoord + float2(-pix.x,    0.0)), //W
-            ReShade::GetLinearizedDepth(texcoord + float2(-pix.x, -pix.y)) //NW
-        );
+        float4 depth1[3];
+        float4 depth2[3];
+
+        for(int i = 0; i < iUIMeshEdgesIterations; i++)
+        {
+            depth1[i] = float4(
+                ReShade::GetLinearizedDepth(texcoord + (i + 1.0) * float2(   0.0, -pix.y)),//N
+                ReShade::GetLinearizedDepth(texcoord + (i + 1.0) * float2( pix.x, -pix.y)),//NE
+                ReShade::GetLinearizedDepth(texcoord + (i + 1.0) * float2( pix.x,    0.0)),//E
+                ReShade::GetLinearizedDepth(texcoord + (i + 1.0) * float2( pix.x,  pix.y))//SE
+            );
+            depth2[i]  = float4(
+                ReShade::GetLinearizedDepth(texcoord + (i + 1.0) * float2(   0.0,  pix.y)),//S
+                ReShade::GetLinearizedDepth(texcoord + (i + 1.0) * float2(-pix.x,  pix.y)),//SW
+                ReShade::GetLinearizedDepth(texcoord + (i + 1.0) * float2(-pix.x,    0.0)), //W
+                ReShade::GetLinearizedDepth(texcoord + (i + 1.0) * float2(-pix.x, -pix.y)) //NW
+            );
+        }
 
         if(luma_type == 1)
         {
@@ -458,33 +502,10 @@ namespace Comic {
 
         if(mesh_edges_enable)
         {
-            /******************************************************************************
-                Outlines type 2:
-                This method calculates how flat the plane around the center pixel is.
-                Can be used to draw the polygon edges of a mesh and its outline.
-            ******************************************************************************/
-            float depthCenter = depthC;
-            float4 depthCardinal = float4(depth1.x, depth2.x, depth1.z, depth2.z);
-            float4 depthInterCardinal = float4(depth1.y, depth2.y, depth1.w, depth2.w);
-            //Calculate the min and max depths
-            float2 mind = float2(MIN4(depthCardinal), MIN4(depthInterCardinal));
-            float2 maxd = float2(MAX4(depthCardinal), MAX4(depthInterCardinal));
-            float span = MAX2(maxd) - MIN2(mind) + 0.00001;
-
-            //Normalize values
-            depthCenter /= span;
-            depthCardinal /= span;
-            depthInterCardinal /= span;
-            //Calculate the (depth-wise) distance of the surrounding pixels to the center
-            float4 diffsCardinal = abs(depthCardinal - depthCenter);
-            float4 diffsInterCardinal = abs(depthInterCardinal - depthCenter);
-            //Calculate the difference of the (opposing) distances
-            float2 meshEdge = float2(
-                max(abs(diffsCardinal.x - diffsCardinal.y), abs(diffsCardinal.z - diffsCardinal.w)),
-                max(abs(diffsInterCardinal.x - diffsInterCardinal.y), abs(diffsInterCardinal.z - diffsInterCardinal.w))
-            );
-
-            retVal.w = MAX2(meshEdge);
+            for(int i = 0; i < iUIMeshEdgesIterations; i++)
+            {
+                retVal.w = max(retVal.w, MeshEdges(depthC, depth1[i], depth2[i]));
+            }
         }
 
         return saturate(retVal);
@@ -570,3 +591,4 @@ technique Comic
         PixelShader = Comic::Sketch_PS;
     }
 }
+
