@@ -35,6 +35,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Version History:
+// 15-nov-2018:     v1.2.0    Simplify outlines Caclulation,
+//                            Add line width control to mesh-edges
 // 09-nov-2018:     v1.1.2    Simplify code for debug-output
 // 07-nov-2018:     v1.1.1    Place convolution code in its own function,
 //                            code cleanup
