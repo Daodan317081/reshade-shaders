@@ -451,9 +451,9 @@ namespace Comic {
                 2. Calculate how much the normal vector differs from the view direction.
             ******************************************************************************/
             float3 vertCenter = float3(texcoord, depthC);
-            float3 vertNorth = float3(texcoord + float2(0.0, -pix.y), depth1.x);
-            float3 vertEast = float3(texcoord + float2(pix.x, 0.0), depth1.z);
-            retVal.z = 1.0 - saturate(dot(float3(0.0, 0.0, 1.0), normalize(cross(vertCenter - vertNorth, vertCenter - vertEast)) * 0.5 + 0.5));
+            float3 vertNorth = float3(texcoord + float2(0.0, -pix.y), depth1[0].x);
+            float3 vertEast = float3(texcoord + float2(pix.x, 0.0), depth1[0].z);
+            retVal.z = (1.0 - saturate(normalize(cross(vertCenter - vertNorth, vertCenter - vertEast)) * 0.5 + 0.5)).z;
         }
 
         if(mesh_edges_enable)
