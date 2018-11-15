@@ -1,11 +1,11 @@
 #include "ReShade.fxh"
 
-uniform int2 iUIOverlayPos <
+uniform float2 fUIOverlayPos <
 	ui_type = "drag";
 	ui_label = "Overlay Position";
-	ui_min = 0; ui_max = BUFFER_WIDTH;
-	ui_step = 1;
-> = int2(0, 0);
+	ui_min = 0.0; ui_max = 1.0;
+	ui_step = 0.01;
+> = int2(0.5, 0.5);
 
 uniform float fUIOverlayScale <
     ui_type = "drag";
@@ -17,8 +17,7 @@ uniform float fUIOverlayScale <
 float3 HotsamplingHelperPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
     float2 coord;
 
-    int2 overlayPos = int2(clamp(iUIOverlayPos.x, 0, BUFFER_WIDTH * (1.0 - fUIOverlayScale)),
-                           clamp(iUIOverlayPos.y, 0, BUFFER_HEIGHT * (1.0 - fUIOverlayScale)));
+    int2 overlayPos = fUIOverlayPos * (1.0 - fUIOverlayScale) * int2(BUFFER_WIDTH, BUFFER_HEIGHT);
 
     if(vpos.x >= overlayPos.x &&
        vpos.y >= overlayPos.y &&
