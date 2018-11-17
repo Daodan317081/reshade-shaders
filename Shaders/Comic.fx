@@ -446,6 +446,7 @@ namespace Comic {
         float4 depth1[3];
         float4 depth2[3];
 
+        [unroll]
         for(int i = 0; i < iUIMeshEdgesIterations; i++)
         {
             depth1[i] = float4(
