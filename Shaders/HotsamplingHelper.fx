@@ -45,34 +45,29 @@ uniform float2 fUIOverlayPos <
 	ui_type = "drag";
 	ui_label = "Overlay Position";
 	ui_min = 0.0; ui_max = 1.0;
-	ui_step = 0.01;
-> = int2(0.5, 0.5);
+	ui_step = 0.001;
+> = float2(0.5, 0.5);
 
 uniform float fUIOverlayScale <
     ui_type = "drag";
     ui_label = "Overlay Scale";
     ui_min = 0.1; ui_max = 1.0;
-    ui_step = 0.01;
+    ui_step = 0.001;
 > = 0.2;
 
 float3 HotsamplingHelperPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
-    float2 coord;
 
-    int2 overlayPos = fUIOverlayPos * (1.0 - fUIOverlayScale) * int2(BUFFER_WIDTH, BUFFER_HEIGHT);
+    float2 overlayPos = fUIOverlayPos * (1.0 - fUIOverlayScale) * ReShade::ScreenSize;
 
-    if(vpos.x >= overlayPos.x &&
-       vpos.y >= overlayPos.y &&
-       vpos.x <  overlayPos.x + BUFFER_WIDTH * fUIOverlayScale &&
-       vpos.y <  overlayPos.y + BUFFER_HEIGHT * fUIOverlayScale)
+    bool2 b1 = vpos.xy >= overlayPos;
+    bool2 b2 = vpos.xy < overlayPos + ReShade::ScreenSize * fUIOverlayScale;
+
+    if(all(b1) && all(b2))
     {
-        coord = frac((texcoord - overlayPos / float2(BUFFER_WIDTH, BUFFER_HEIGHT)) / fUIOverlayScale);
-    }
-    else
-    {
-        coord = texcoord;
+        texcoord = frac((texcoord - overlayPos / float2(BUFFER_WIDTH, BUFFER_HEIGHT)) / fUIOverlayScale);
     }
 
-    return tex2D(ReShade::BackBuffer, coord).rgb;
+    return tex2D(ReShade::BackBuffer, texcoord).rgb;
 }
 
 technique HotsamplingHelper {
