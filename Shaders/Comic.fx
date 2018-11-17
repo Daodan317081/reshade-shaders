@@ -223,11 +223,13 @@ uniform float2 fUIMeshEdgesStrength <
     ui_step = 0.01;
 > = float2(3.0, 3.0);
 
+#define COMIC_MESHEDGES_ITERATIONS_MAX 3
+
 uniform int iUIMeshEdgesIterations <
     ui_type = "drag";
     ui_category = UI_CATEGORY_MESH_EDGES;
     ui_label = "Line Width";
-    ui_min = 1; ui_max = 3;
+    ui_min = 1; ui_max = COMIC_MESHEDGES_ITERATIONS_MAX;
     ui_step = 0.01;
 > = 1;
 
@@ -443,11 +445,12 @@ namespace Comic {
 
         float2 pix = ReShade::PixelSize;
         float depthC = ReShade::GetLinearizedDepth(texcoord);//C
-        float4 depth1[3];
-        float4 depth2[3];
+        float4 depth1[COMIC_MESHEDGES_ITERATIONS_MAX];
+        float4 depth2[COMIC_MESHEDGES_ITERATIONS_MAX];
 
+        int iterations = clamp(iUIMeshEdgesIterations, 1, COMIC_MESHEDGES_ITERATIONS_MAX);
         [unroll]
-        for(int i = 0; i < iUIMeshEdgesIterations; i++)
+        for(int i = 0; i < iterations; i++)
         {
             depth1[i] = float4(
                 ReShade::GetLinearizedDepth(texcoord + (i + 1.0) * float2(   0.0, -pix.y)),//N
