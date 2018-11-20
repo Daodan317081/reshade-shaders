@@ -63,7 +63,7 @@
 #define UI_EDGES_LABEL_DISTANCE_STRENGTH "Distance Strength"
 #define UI_EDGES_LABEL_DEBUG "Add to Debug Layer"
 
-#define UI_EDGES_TOOLTIP_ENABLE "0: Disabled\n1: Value Difference\n2: Single Pass Convolution\n3: Two Pass Convolution"
+#define UI_EDGES_ITEMS "Disabled\0Value Difference\0Single Pass Convolution\0Two Pass Convolution"
 #define UI_EDGES_TOOLTIP_DISTANCE_STRENGTH "x: Fade In\ny: Fade Out\nz: Slope"
 #define UI_EDGES_TOOLTIP_WEIGHTS "x: Min\ny: Max\nz: Slope"
 #define UI_EDGES_TOOLTIP_DETAILS "Only for Convolution"
@@ -95,11 +95,10 @@
 ******************************************************************************/
 ////////////////////////// Color //////////////////////////
 uniform int iUIColorEdgesType <
-    ui_type = "drag";
-    ui_tooltip = UI_EDGES_TOOLTIP_ENABLE;
+    ui_type = "combo";
     ui_category = UI_CATEGORY_COLOR;
     ui_label = UI_EDGES_LABEL_ENABLE;
-    ui_min = 0; ui_max = 3;
+    ui_items = UI_EDGES_ITEMS;
 > = 1;
 
 uniform float fUIColorEdgesDetails <
@@ -135,11 +134,10 @@ uniform bool bUIColorEdgesDebugLayer <
 
 ////////////////////////// Chroma //////////////////////////
 uniform int iUIChromaEdgesType <
-    ui_type = "drag";
-    ui_tooltip = UI_EDGES_TOOLTIP_ENABLE;
+    ui_type = "combo";
     ui_category = UI_CATEGORY_CHROMA;
     ui_label = UI_EDGES_LABEL_ENABLE;
-    ui_min = 0; ui_max = 3;
+    ui_items = UI_EDGES_ITEMS;
 > = 3;
 
 uniform float fUIChromaEdgesDetails <
