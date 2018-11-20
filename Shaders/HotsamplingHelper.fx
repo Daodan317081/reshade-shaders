@@ -59,10 +59,7 @@ float3 HotsamplingHelperPS(float4 vpos : SV_Position, float2 texcoord : TexCoord
 
     float2 overlayPos = fUIOverlayPos * (1.0 - fUIOverlayScale) * ReShade::ScreenSize;
 
-    bool2 b1 = vpos.xy >= overlayPos;
-    bool2 b2 = vpos.xy < overlayPos + ReShade::ScreenSize * fUIOverlayScale;
-
-    if(all(b1) && all(b2))
+    if(all(vpos.xy >= overlayPos) && all(vpos.xy < overlayPos + ReShade::ScreenSize * fUIOverlayScale))
     {
         texcoord = frac((texcoord - overlayPos / ReShade::ScreenSize) / fUIOverlayScale);
     }
