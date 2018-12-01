@@ -88,14 +88,22 @@ uniform bool bUIShowDebugOverlay <
     ui_category = COLORISOLATION_CATEGORY_DEBUG;
 > = false;
 
-uniform int4 iUIOverlay <
+uniform float2 fUIOverlayPos<
     ui_type = "drag";
     ui_category = COLORISOLATION_CATEGORY_DEBUG;
-    ui_label = "Overlay: Position, Size";
-    ui_tooltip = "x: x-position\ny: y-position\nz: width\nw: height";
+    ui_label = "Overlay: Position";
+    ui_min = 0.0; ui_max = 1.0;
+    ui_step = 0.01;
+> = float2(0.0, 0.0);
+
+uniform int2 iUIOverlaySize <
+    ui_type = "drag";
+    ui_category = COLORISOLATION_CATEGORY_DEBUG;
+    ui_label = "Overlay: Size";
+    ui_tooltip = "x: width\nz: height";
     ui_min = 50; ui_max = BUFFER_WIDTH;
     ui_step = 1;
-> = int4(0, 0, 600, 100);
+> = int2(600, 100);
 
 uniform float fUIOverlayOpacity <
     ui_type = "drag";
@@ -150,23 +158,20 @@ float CalculateValue(float x, float height, float offset, float overlap) {
     return retVal;
 }
 
-float3 DrawDebugOverlay(float3 background, float3 param, int2 pos, int2 size, float opacity, int2 vpos, float2 texcoord) {
-    float x, y;
-    float3 overlay;
+float3 DrawDebugOverlay(float3 background, float3 param, float2 pos, int2 size, float opacity, int2 vpos, float2 texcoord) {
+    float x, y, value, luma;
+    float3 overlay, hsvStrip;
 
-    pos.xy = int2(clamp(pos.x, 0, BUFFER_WIDTH - size.x), clamp(pos.y, 0, BUFFER_HEIGHT - size.y));
+	float2 overlayPos = pos * (ReShade::ScreenSize - size);
 
-    if( vpos.x >= pos.x &&
-        vpos.x < pos.x + size.x &&
-        vpos.y >= pos.y &&
-        vpos.y < pos.y + size.y)
+    if(all(vpos.xy >= overlayPos) && all(vpos.xy < overlayPos + size))
     {
-        x = Map(texcoord.x, float2(pos.x, pos.x + size.x) / BUFFER_WIDTH, float2(0.0, 1.0));
-        y = Map(texcoord.y, float2(pos.y, pos.y + size.y) / BUFFER_HEIGHT, float2(0.0, 1.0));
-        float3 hsvStrip = HSVtoRGB(float3(x, 1.0, 1.0));
-        float3 luma = dot(hsvStrip, float3(0.2126, 0.7151, 0.0721));
-        float value = CalculateValue(x, param.z, param.x, 1.0 - param.y);
-        overlay = lerp(luma, hsvStrip, value);
+        x = Map(texcoord.x, float2(overlayPos.x, overlayPos.x + size.x) / BUFFER_WIDTH, float2(0.0, 1.0));
+        y = Map(texcoord.y, float2(overlayPos.y, overlayPos.y + size.y) / BUFFER_HEIGHT, float2(0.0, 1.0));
+        hsvStrip = HSVtoRGB(float3(x, 1.0, 1.0));
+        luma = dot(hsvStrip, float3(0.2126, 0.7151, 0.0721));
+        value = CalculateValue(x, param.z, param.x, 1.0 - param.y);
+        overlay = lerp(luma.rrr, hsvStrip, value);
         overlay = lerp(overlay, 0.0.rrr, exp(-size.y * length(float2(x, 1.0 - y) - float2(x, value))));
         background = lerp(background, overlay, opacity);
     }
@@ -186,7 +191,7 @@ float3 ColorIsolationPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) :
     
     if(bUIShowDebugOverlay)
     {
-        retVal = DrawDebugOverlay(retVal, param, iUIOverlay.xy, iUIOverlay.zw, fUIOverlayOpacity, vpos.xy, texcoord);
+        retVal = DrawDebugOverlay(retVal, param, fUIOverlayPos, iUIOverlaySize, fUIOverlayOpacity, vpos.xy, texcoord);
     }
 
     return retVal;
