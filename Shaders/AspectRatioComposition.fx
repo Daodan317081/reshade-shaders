@@ -35,7 +35,7 @@ uniform int2 iUIAspectRatio <
 uniform int iUIGridType <
 	ui_type = "combo";
 	ui_label = "Grid Type";
-	ui_items = "Fractions\0Golden Ratio\0";
+	ui_items = "Off\0Fractions\0Golden Ratio\0";
 > = 0;
 
 uniform int iUIGridFractions <
@@ -114,9 +114,9 @@ float3 AspectRatioComposition_PS(float4 vpos : SV_Position, float2 texcoord : Te
 	userAspectRatio = (float)iUIAspectRatio.x / (float)iUIAspectRatio.y;
 #endif
 
-	if(iUIGridType == 0)
+	if(iUIGridType == 1)
 		retVal = DrawGrid(color, UIGridColor.rgb, userAspectRatio, iUIGridFractions, vpos);
-	else
+	else if(iUIGridType == 2)
 	{
 		retVal = DrawGrid(color, UIGridColor.rgb, userAspectRatio, GOLDEN_RATIO, vpos);
 		retVal = DrawGrid(retVal, UIGridColor.rgb, userAspectRatio, GOLDEN_RATIO, float4(BUFFER_WIDTH, BUFFER_HEIGHT, 0, 0) - vpos);
