@@ -57,7 +57,7 @@
 #define UI_CATEGORY_DEBUG "Debug"
 #define UI_CATEGORY_EFFECT "Effect"
 
-#define UI_EDGES_LABEL_ENABLE "Enable"
+#define UI_EDGES_LABEL_ENABLE "Type"
 #define UI_EDGES_LABEL_DETAILS "Details"
 #define UI_EDGES_LABEL_STRENGTH "Power, Slope"
 #define UI_EDGES_LABEL_DISTANCE_STRENGTH "Distance Strength"
@@ -173,12 +173,10 @@ uniform bool bUIChromaEdgesDebugLayer <
 
 ////////////////////////// Outlines //////////////////////////
 uniform int iUIOutlinesEnable <
-    ui_type = "drag";
+    ui_type = "combo";
     ui_category = UI_CATEGORY_OUTLINES;
     ui_label = UI_EDGES_LABEL_ENABLE;
-    ui_tooltip = "0: Disabled\n1: Enabled";
-    ui_min = 0; ui_max = 1;
-    ui_step = 1;
+    ui_items = "Disabled\0Type 1\0Type 2\0";
 > = 1;
 
 uniform float2 fUIOutlinesStrength <
@@ -205,12 +203,10 @@ uniform bool bUIOutlinesDebugLayer <
 
 ////////////////////////// Mesh Edges //////////////////////////
 uniform int iUIMeshEdgesEnable <
-    ui_type = "drag";
+    ui_type = "combo";
     ui_category = UI_CATEGORY_MESH_EDGES;
     ui_label = UI_EDGES_LABEL_ENABLE;
-    ui_tooltip = "0: Disabled\n1: Enabled";
-    ui_min = 0; ui_max = 1;
-    ui_step = 1;
+    ui_items = "Disabled\0Enabled\0";
 > = 1;
 
 uniform float2 fUIMeshEdgesStrength <
@@ -224,7 +220,7 @@ uniform float2 fUIMeshEdgesStrength <
 #define COMIC_MESHEDGES_ITERATIONS_MAX 3
 
 uniform int iUIMeshEdgesIterations <
-    ui_type = "drag";
+    ui_type = "slider";
     ui_category = UI_CATEGORY_MESH_EDGES;
     ui_label = "Line Width";
     ui_min = 1; ui_max = COMIC_MESHEDGES_ITERATIONS_MAX;
