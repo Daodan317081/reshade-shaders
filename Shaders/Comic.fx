@@ -35,6 +35,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Version History:
+// 20-nov-2018:     v1.2.2    Update uniforms
+// 17-nov-2018:     v1.2.1    Update code for line width
 // 15-nov-2018:     v1.2.0    Simplify outlines Caclulation,
 //                            Add line width control to mesh-edges
 // 09-nov-2018:     v1.1.2    Simplify code for debug-output
@@ -591,4 +593,3 @@ technique Comic
         PixelShader = Comic::Sketch_PS;
     }
 }
-
