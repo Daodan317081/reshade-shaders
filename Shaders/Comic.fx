@@ -5,7 +5,7 @@
 //
 //BSD 3-Clause License
 //
-//Copyright (c) 2018, Alexander Federwisch
+//Copyright (c) 2018-2019, Alexander Federwisch
 //All rights reserved.
 //
 //Redistribution and use in source and binary forms, with or without
@@ -180,6 +180,14 @@ uniform int iUIOutlinesEnable <
     ui_label = UI_EDGES_LABEL_ENABLE;
     ui_items = "Disabled\0Type 1\0Type 2\0";
 > = 1;
+
+uniform float fUIOutlinesThreshold <
+    ui_type = "drag";
+    ui_category = UI_CATEGORY_OUTLINES;
+    ui_label = "Threshold";
+    ui_min = 0.0; ui_max = 1000.0;
+    ui_step = 0.01;
+> = 1.0;
 
 uniform float2 fUIOutlinesStrength <
     ui_type = "drag";
@@ -489,7 +497,7 @@ namespace Comic {
             retVal.y = Comic::Convolution(chromaV1, chromaV2, chroma_type, chroma_detail);
         }
 
-        if(outlines_enable)
+        if(outlines_enable == 1)
         {
             /******************************************************************************
                 Outlines type 1:
@@ -500,6 +508,11 @@ namespace Comic {
             float3 vertNorth = float3(texcoord + float2(0.0, -pix.y), depth1[0].x);
             float3 vertEast = float3(texcoord + float2(pix.x, 0.0), depth1[0].z);
             retVal.z = (1.0 - saturate(normalize(cross(vertCenter - vertNorth, vertCenter - vertEast)) * 0.5 + 0.5)).z;
+        }
+        else if(outlines_enable == 2)
+        {
+            float maxDiff = max(MAX4((depth1[0])), MAX4((depth2[0]))) - min(MIN4((depth1[0])), MIN4((depth2[0])));
+            retVal.z = maxDiff < fUIOutlinesThreshold / RESHADE_DEPTH_LINEARIZATION_FAR_PLANE ? 0.0 : 1.0;
         }
 
         if(mesh_edges_enable)

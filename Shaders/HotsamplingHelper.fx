@@ -5,7 +5,7 @@
 //
 //BSD 3-Clause License
 //
-//Copyright (c) 2018, Alexander Federwisch
+//Copyright (c) 2018-2019, Alexander Federwisch
 //All rights reserved.
 //
 //Redistribution and use in source and binary forms, with or without
