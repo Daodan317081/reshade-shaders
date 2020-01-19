@@ -55,6 +55,11 @@ uniform float fUIOverlayScale <
     ui_step = 0.001;
 > = 0.2;
 
+uniform bool bUIMaskBackground <
+	ui_type = "radio";
+	ui_label = "Mask Background";
+> = true;
+
 float3 HotsamplingHelperPS(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target {
 
     float2 overlayPos = fUIOverlayPos * (1.0 - fUIOverlayScale) * ReShade::ScreenSize;
@@ -62,6 +67,10 @@ float3 HotsamplingHelperPS(float4 vpos : SV_Position, float2 texcoord : TexCoord
     if(all(vpos.xy >= overlayPos) && all(vpos.xy < overlayPos + ReShade::ScreenSize * fUIOverlayScale))
     {
         texcoord = frac((texcoord - overlayPos / ReShade::ScreenSize) / fUIOverlayScale);
+    }
+    else if(bUIMaskBackground)
+    {
+    	return 0.0.rrr;
     }
 
     return tex2D(ReShade::BackBuffer, texcoord).rgb;
