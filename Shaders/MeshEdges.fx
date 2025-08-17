@@ -59,6 +59,14 @@ uniform float fUIStrength <
     ui_step = 0.01;
 > = 1.0;
 
+uniform float fUISkybox <
+	ui_type = "drag";
+	ui_label = "Skybox Distance";
+	ui_tooltip = "Sets the distance that prevents further edges from being drawn, used primarily for filtering skyboxes.\n(Can also be used as a crude way to set LOD)";
+	ui_min = 100; ui_max = 10000;
+	ui_step = 100;
+> = 1000;
+
 #define MAX2(v) max(v.x, v.y)
 #define MIN2(v) min(v.x, v.y)
 #define MAX4(v) max(v.x, max(v.y, max(v.z, v.w)))
@@ -96,6 +104,10 @@ float3 MeshEdges_PS(float4 vpos:SV_Position, float2 texcoord:TexCoord):SV_Target
                             max(abs(diffsOdd.x - diffsOdd.y), abs(diffsOdd.z - diffsOdd.w))     );
 
     float lineWeight = MAX2(retVal);
+    //Prevent distant edges from being drawn
+    if (c > fUISkybox){
+    	lineWeight = 0;
+    }
 
     return lerp(iUIBackground == 0 ? backbuffer : fUIColorBackground, fUIColorLines, lineWeight * fUIStrength);
 }
